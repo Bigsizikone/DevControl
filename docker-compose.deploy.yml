@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: service-desk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: service_desk
+      POSTGRES_USER: service_desk
+      POSTGRES_PASSWORD: service_desk
+    volumes:
+      - service_desk_pgdata:/var/lib/postgresql/data
+      - ./database/migrations/001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql:ro
+      - ./database/seed/002_test_data.sql:/docker-entrypoint-initdb.d/002_test_data.sql:ro
+      - ./database/migrations/003_visit_schedule.sql:/docker-entrypoint-initdb.d/003_visit_schedule.sql:ro
+      - ./database/migrations/004_purchase_requests.sql:/docker-entrypoint-initdb.d/004_purchase_requests.sql:ro
+      - ./database/migrations/005_asset_inventory.sql:/docker-entrypoint-initdb.d/005_asset_inventory.sql:ro
+      - ./database/seed/006_asset_inventory_seed.sql:/docker-entrypoint-initdb.d/006_asset_inventory_seed.sql:ro
+      - ./database/migrations/007_ticket_equipment_flow.sql:/docker-entrypoint-initdb.d/007_ticket_equipment_flow.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U service_desk -d service_desk"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  service-desk-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: service-desk-api
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://service_desk:service_desk@postgres:5432/service_desk
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+
+  service-desk-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: service-desk-frontend
+    restart: unless-stopped
+    depends_on:
+      - service-desk-api
+    ports:
+      - "3002:80"
+
+volumes:
+  service_desk_pgdata:
