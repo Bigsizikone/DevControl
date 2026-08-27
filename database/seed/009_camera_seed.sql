@@ -39,7 +39,7 @@ INSERT INTO camera_violations (id, event_datetime, author_id, object_name, comme
 SELECT
   ('a9000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
   now() - make_interval(days => n),
-  '00000000-0000-0000-0000-' || lpad((10 + ((n - 1) % 6))::text, 12, '0'),
+  ('00000000-0000-0000-0000-' || lpad((10 + ((n - 1) % 6))::text, 12, '0'))::uuid,
   CASE (n % 4) WHEN 0 THEN 'Камера 01 · Северный вход' WHEN 1 THEN 'Камера 07 · Парковка' WHEN 2 THEN 'Камера 12 · Серверная' ELSE 'Камера 03 · Склад' END,
   CASE (n % 4) WHEN 0 THEN 'Обнаружено открытие служебной двери вне рабочего времени.' WHEN 1 THEN 'Зафиксировано движение в зоне парковки.' WHEN 2 THEN 'Требуется проверить доступ в серверную.' ELSE 'Нарушение порядка хранения оборудования.' END
 FROM generate_series(1, 10) n

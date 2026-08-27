@@ -19,6 +19,7 @@ type AdminReference = { table: string; label: string };
 type AdminColumn = { name: string; label: string; reference?: AdminReference; dataType: string; nullable: boolean; defaultValue: string | null; generated: boolean };
 type AdminData = { name: string; columns: AdminColumn[]; primaryKey: string[]; rows: Array<Record<string, unknown>>; displayRows?: Array<Record<string, unknown>>; limit: number; offset: number };
 type AdminLookup = { value: string; label: string };
+type HealthResponse = { status: string; database: 'up' | 'down' };
 type TicketUser = { id: string; display_name: string; email: string };
 type TicketType = { id: string; code: string; name: string };
 type TicketKind = { id: string; ticket_type_id: string; code: string; name: string };
@@ -46,6 +47,13 @@ function App() {
   const [ticketToOpen, setTicketToOpen] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [databaseOnline, setDatabaseOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void request<HealthResponse>('/health')
+      .then((result) => setDatabaseOnline(result.database === 'up'))
+      .catch(() => setDatabaseOnline(false));
+  }, []);
 
   const run = async (action: () => Promise<void>) => {
     setLoading(true);
@@ -116,7 +124,7 @@ function App() {
         <div className="brand"><span className="brand-mark">SD</span><span>Service Desk</span></div>
         <div className="workspace-label">КОНТУР УПРАВЛЕНИЯ</div>
         <nav>{navItems.map((item) => <button key={item.id} aria-current={tab === item.id ? 'page' : undefined} className={tab === item.id ? 'nav-item active' : 'nav-item'} onClick={() => setTab(item.id)}><span>{item.icon}</span>{item.label}</button>)}</nav>
-        <div className="sidebar-bottom"><div className="server-status"><span className="status-dot" /> API и БД онлайн</div><div className="user-chip"><span className="avatar">AK</span><div><strong>Анна Кузнецова</strong><small>Администратор</small></div><span className="chevron">⌄</span></div></div>
+        <div className="sidebar-bottom"><div className="server-status"><span className="status-dot" /> {databaseOnline === null ? 'Проверка API и БД…' : databaseOnline ? 'API и БД онлайн' : 'БД недоступна'}</div><div className="user-chip"><span className="avatar">AK</span><div><strong>Анна Кузнецова</strong><small>Администратор</small></div><span className="chevron">⌄</span></div></div>
       </aside>
 
       <main className="main-content">
