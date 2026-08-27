@@ -25,6 +25,18 @@ npm start
 
 Сервер запускается на `http://localhost:3000` при локальном запуске Node.js; в удаленном Docker-развертывании внешний порт — `3001`.
 
+### Единый локальный хост
+
+После сборки frontend раздается тем же Node.js-сервером, что и API. Все запросы интерфейса к `/api/*` обслуживаются на том же origin, поэтому для локальной проверки достаточно:
+
+```bash
+pnpm run build
+pnpm --dir frontend run build
+pnpm start
+```
+
+Откройте `http://localhost:3000/`. Проверка API: `http://localhost:3000/api/health`.
+
 Для запуска контейнера:
 
 ```bash
