@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { EquipmentPanel, IntegrationsPanel, InventoryPanel } from './business-panels';
+import { CamerasPanel } from './camera-panel';
 
-type Tab = 'overview' | 'tickets' | 'access' | 'routing' | 'reports' | 'equipment' | 'inventory' | 'integrations' | 'admin';
+type Tab = 'overview' | 'tickets' | 'access' | 'routing' | 'reports' | 'equipment' | 'inventory' | 'integrations' | 'cameras' | 'admin';
 type AccessResult = { allowed: boolean; reason: string; decisionId: string };
 type RoutingResult = {
   matchedRuleIds: string[];
@@ -105,6 +106,7 @@ function App() {
     { id: 'equipment' as Tab, icon: '▣', label: 'Оборудование' },
     { id: 'inventory' as Tab, icon: '▥', label: 'Склад и ТМЦ' },
     { id: 'integrations' as Tab, icon: '⇄', label: 'Обмены с ИС' },
+    ...(['operator', 'senior_operator', 'admin'].includes(CURRENT_ROLE) ? [{ id: 'cameras' as Tab, icon: '◉', label: 'Видеокамеры' }] : []),
     ...(CURRENT_ROLE === 'admin' ? [{ id: 'admin' as Tab, icon: '▦', label: 'НСИ' }] : []),
   ], []);
 
@@ -128,6 +130,7 @@ function App() {
           {tab === 'equipment' && <EquipmentPanel />}
           {tab === 'inventory' && <InventoryPanel />}
           {tab === 'integrations' && <IntegrationsPanel />}
+          {tab === 'cameras' && <CamerasPanel />}
           {tab === 'admin' && <AdminPanel />}
           {error && <div className="error-banner">{error}</div>}
         </section>

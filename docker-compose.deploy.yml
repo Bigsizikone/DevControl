@@ -16,6 +16,8 @@ services:
       - ./database/migrations/005_asset_inventory.sql:/docker-entrypoint-initdb.d/005_asset_inventory.sql:ro
       - ./database/seed/006_asset_inventory_seed.sql:/docker-entrypoint-initdb.d/006_asset_inventory_seed.sql:ro
       - ./database/migrations/007_ticket_equipment_flow.sql:/docker-entrypoint-initdb.d/007_ticket_equipment_flow.sql:ro
+      - ./database/migrations/008_camera_module.sql:/docker-entrypoint-initdb.d/008_camera_module.sql:ro
+      - ./database/seed/009_camera_seed.sql:/docker-entrypoint-initdb.d/009_camera_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U service_desk -d service_desk"]
       interval: 5s
@@ -31,6 +33,10 @@ services:
     environment:
       PORT: 3000
       DATABASE_URL: postgresql://service_desk:service_desk@postgres:5432/service_desk
+      MAX_VIOLATION_FILE_SIZE_MB: 200
+      CAMERA_UPLOAD_DIR: /app/storage/camera-violations
+    volumes:
+      - service_desk_camera_files:/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,3 +56,4 @@ services:
 
 volumes:
   service_desk_pgdata:
+  service_desk_camera_files:

@@ -30,6 +30,11 @@ export const ADMIN_TABLE_LABELS: Record<string, string> = {
   equipment_movements: 'Движение оборудования',
   inventory_receipts: 'Поступления ТМЦ',
   system_integrations: 'Обмены с ИС',
+  camera_work_shifts: 'Смены видеокамер',
+  camera_schedule_templates: 'Шаблоны графика видеокамер',
+  camera_violations: 'Нарушения видеонаблюдения',
+  camera_violation_attachments: 'Вложения нарушений',
+  camera_schedule_recommendations: 'Рекомендации графика',
 };
 
 export type AdminReference = { table: string; label: string };
@@ -51,6 +56,11 @@ export const ADMIN_REFERENCE_COLUMNS: Record<string, Record<string, AdminReferen
   equipment_items: { warehouse_id: { table: 'warehouses', label: 'name' }, organization_id: { table: 'organizations', label: 'name' }, department_id: { table: 'departments', label: 'name' }, assigned_to: { table: 'users', label: 'display_name' } },
   equipment_movements: { equipment_id: { table: 'equipment_items', label: 'inventory_number' }, organization_id: { table: 'organizations', label: 'name' }, department_id: { table: 'departments', label: 'name' }, employee_id: { table: 'users', label: 'display_name' }, issued_by: { table: 'users', label: 'display_name' }, approver_id: { table: 'users', label: 'display_name' } },
   inventory_receipts: { organization_id: { table: 'organizations', label: 'name' }, warehouse_id: { table: 'warehouses', label: 'name' }, employee_id: { table: 'users', label: 'display_name' }, nomenclature_id: { table: 'nomenclature', label: 'name' } },
+  camera_work_shifts: { employee_id: { table: 'users', label: 'display_name' }, created_by: { table: 'users', label: 'display_name' } },
+  camera_schedule_templates: { created_by: { table: 'users', label: 'display_name' } },
+  camera_violations: { author_id: { table: 'users', label: 'display_name' } },
+  camera_violation_attachments: { violation_id: { table: 'camera_violations', label: 'document_number' }, uploaded_by: { table: 'users', label: 'display_name' } },
+  camera_schedule_recommendations: { employee_id: { table: 'users', label: 'display_name' }, created_by: { table: 'users', label: 'display_name' } },
 };
 
 export const ADMIN_FIELD_LABELS: Record<string, Record<string, string>> = {
@@ -85,4 +95,9 @@ export const ADMIN_FIELD_LABELS: Record<string, Record<string, string>> = {
   equipment_movements: { id: 'Идентификатор', document_number: 'Номер документа', equipment_id: 'Оборудование', organization_id: 'Организация', department_id: 'Подразделение', employee_id: 'Сотрудник', issued_by: 'Выдал', status: 'Статус документа', requires_approval: 'Требует согласования', approver_id: 'Согласующий', comment: 'Комментарий', created_at: 'Дата создания' },
   inventory_receipts: { id: 'Идентификатор', document_number: 'Номер документа', organization_id: 'Организация', warehouse_id: 'Склад', employee_id: 'Получил', nomenclature_id: 'Номенклатура', quantity: 'Количество', comment: 'Комментарий', created_at: 'Дата создания' },
   system_integrations: { id: 'Идентификатор', code: 'Код подключения', name: 'Название системы', integration_type: 'Тип подключения', endpoint: 'Адрес подключения', database_name: 'Имя базы данных', description: 'Описание', api_description: 'Описание API', is_active: 'Активно', last_sync_at: 'Последний обмен', created_at: 'Дата создания' },
+  camera_work_shifts: { id: 'Идентификатор', employee_id: 'Сотрудник', work_date: 'Дата смены', start_time: 'Начало', end_time: 'Окончание', status: 'Статус', object_name: 'Объект наблюдения', comment: 'Комментарий', created_by: 'Создал', created_at: 'Дата создания', updated_at: 'Дата изменения', deleted_at: 'Дата удаления' },
+  camera_schedule_templates: { id: 'Идентификатор', name: 'Название шаблона', employee_ids: 'Операторы', recurrence_type: 'Тип повторения', recurrence_config: 'Настройки повторения', start_date: 'Дата начала', end_date: 'Дата окончания', start_time: 'Начало', end_time: 'Окончание', object_name: 'Объект наблюдения', comment: 'Комментарий', created_by: 'Создал', created_at: 'Дата создания', updated_at: 'Дата изменения' },
+  camera_violations: { id: 'Идентификатор', document_number: 'Номер нарушения', event_datetime: 'Дата события', author_id: 'Автор', object_name: 'Объект', comment: 'Комментарий', created_at: 'Дата создания', updated_at: 'Дата изменения', deleted_at: 'Дата удаления' },
+  camera_violation_attachments: { id: 'Идентификатор', violation_id: 'Нарушение', file_name: 'Имя файла', original_file_name: 'Исходное имя файла', file_path: 'Путь файла', mime_type: 'Тип файла', file_size: 'Размер файла', uploaded_by: 'Загрузил', created_at: 'Дата загрузки' },
+  camera_schedule_recommendations: { id: 'Идентификатор', employee_id: 'Сотрудник', work_date: 'Дата смены', start_time: 'Начало', end_time: 'Окончание', score: 'Оценка', reasons: 'Причины рекомендации', algorithm_version: 'Версия алгоритма', created_by: 'Создал', created_at: 'Дата создания' },
 };

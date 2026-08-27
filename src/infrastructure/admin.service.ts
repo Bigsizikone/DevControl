@@ -10,6 +10,7 @@ const ADMIN_TABLES = [
   'support_groups', 'support_group_members', 'categories', 'ticket_types', 'ticket_kinds',
   'ticket_type_competencies', 'routing_rules', 'routing_rule_versions',
   'nomenclature', 'warehouses', 'warehouse_stock', 'equipment_items', 'equipment_movements', 'inventory_receipts', 'system_integrations',
+  'camera_work_shifts', 'camera_schedule_templates', 'camera_violations', 'camera_violation_attachments', 'camera_schedule_recommendations',
 ] as const;
 
 type Column = {
