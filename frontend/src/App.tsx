@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { EquipmentPanel, IntegrationsPanel, InventoryPanel } from './business-panels';
-import { CamerasPanel } from './camera-panel';
+import { CamerasPanelV2 as CamerasPanel } from './camera-panel-v2';
 
 type Tab = 'overview' | 'tickets' | 'access' | 'routing' | 'reports' | 'equipment' | 'inventory' | 'integrations' | 'cameras' | 'admin';
 type AccessResult = { allowed: boolean; reason: string; decisionId: string };
