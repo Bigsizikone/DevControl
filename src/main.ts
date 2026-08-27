@@ -6,7 +6,11 @@ import { join, resolve } from 'node:path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const maxFileSizeMb = Number(process.env.MAX_VIOLATION_FILE_SIZE_MB ?? 200);
+  // Вложения передаются как base64, поэтому JSON примерно на 33% больше файла.
+  const requestBodyLimitMb = Math.max(10, Math.ceil(maxFileSizeMb * 1.4));
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
+  app.useBodyParser('json', { limit: `${requestBodyLimitMb}mb` });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const httpServer = app.getHttpAdapter().getInstance();
   const frontendDist = resolve(process.cwd(), 'frontend', 'dist');
