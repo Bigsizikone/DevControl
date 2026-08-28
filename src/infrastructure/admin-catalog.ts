@@ -17,11 +17,11 @@ export const ADMIN_TABLE_LABELS: Record<string, string> = {
   ticket_type_competencies: 'Компетенции типов заявок',
   routing_rules: 'Правила маршрутизации',
   routing_rule_versions: 'Версии правил маршрутизации',
-  tickets: 'Тикеты',
-  ticket_observers: 'Наблюдатели тикетов',
-  ticket_assignments: 'Назначения тикетов',
-  ticket_comments: 'Комментарии к тикетам',
-  ticket_sla_instances: 'SLA тикетов',
+  tickets: 'Обращения',
+  ticket_observers: 'Наблюдатели обращений',
+  ticket_assignments: 'Назначения обращений',
+  ticket_comments: 'Комментарии к обращениям',
+  ticket_sla_instances: 'SLA обращений',
   audit_log: 'Журнал аудита',
   nomenclature: 'Номенклатура',
   warehouses: 'Склады',
@@ -35,6 +35,14 @@ export const ADMIN_TABLE_LABELS: Record<string, string> = {
   camera_violations: 'Нарушения видеонаблюдения',
   camera_violation_attachments: 'Вложения нарушений',
   camera_schedule_recommendations: 'Рекомендации графика',
+};
+
+export const ADMIN_TABLE_BLOCKS: Record<string, string> = {
+  users: 'Пользователи и оргструктура', roles: 'Пользователи и оргструктура', permissions: 'Пользователи и оргструктура', user_roles: 'Пользователи и оргструктура', role_permissions: 'Пользователи и оргструктура', organizations: 'Пользователи и оргструктура', departments: 'Пользователи и оргструктура', territories: 'Пользователи и оргструктура', competencies: 'Пользователи и оргструктура', user_competencies: 'Пользователи и оргструктура', support_groups: 'Пользователи и оргструктура', support_group_members: 'Пользователи и оргструктура',
+  categories: 'Обращения и маршрутизация', ticket_types: 'Обращения и маршрутизация', ticket_kinds: 'Обращения и маршрутизация', ticket_type_competencies: 'Обращения и маршрутизация', routing_rules: 'Обращения и маршрутизация', routing_rule_versions: 'Обращения и маршрутизация', tickets: 'Обращения и маршрутизация', ticket_observers: 'Обращения и маршрутизация', ticket_assignments: 'Обращения и маршрутизация', ticket_comments: 'Обращения и маршрутизация', ticket_sla_instances: 'Обращения и маршрутизация', audit_log: 'Аудит и история',
+  nomenclature: 'Номенклатура и склад', warehouses: 'Номенклатура и склад', warehouse_stock: 'Номенклатура и склад', inventory_receipts: 'Номенклатура и склад',
+  equipment_items: 'Оборудование', equipment_movements: 'Оборудование', system_integrations: 'Интеграции',
+  camera_work_shifts: 'Видеокамеры', camera_schedule_templates: 'Видеокамеры', camera_violations: 'Видеокамеры', camera_violation_attachments: 'Видеокамеры', camera_schedule_recommendations: 'Видеокамеры',
 };
 
 export type AdminReference = { table: string; label: string };
@@ -82,11 +90,11 @@ export const ADMIN_FIELD_LABELS: Record<string, Record<string, string>> = {
   ticket_type_competencies: { ticket_type_id: 'Тип заявки', competency_id: 'Компетенция', min_level: 'Минимальный уровень', required: 'Обязательна' },
   routing_rules: { id: 'Идентификатор', code: 'Код правила', name: 'Название правила', event_type: 'Событие', priority: 'Приоритет', status: 'Статус', active_from: 'Действует с', active_to: 'Действует по', current_version: 'Текущая версия', created_by: 'Создал', created_at: 'Дата создания', updated_at: 'Дата изменения' },
   routing_rule_versions: { rule_id: 'Правило маршрутизации', version: 'Версия', conditions: 'Условия', actions: 'Действия', change_comment: 'Комментарий изменения', created_by: 'Создал', created_at: 'Дата создания' },
-  tickets: { id: 'Идентификатор', number: 'Номер заявки', subject: 'Тема обращения', description: 'Описание', created_by: 'Создатель', organization_id: 'Организация', department_id: 'Подразделение', territory_id: 'Территория', category_id: 'Категория', ticket_type_id: 'Тип заявки', ticket_kind_id: 'Вид заявки', equipment_id: 'Оборудование', project_id: 'Проект', priority: 'Приоритет', status: 'Статус', support_group_id: 'Группа поддержки', assignee_id: 'Исполнитель', sla_policy_id: 'Политика SLA', route_version: 'Версия маршрута', approval_required: 'Требует согласования', visit_required: 'Требует выезда', repair_required: 'Требуется ремонт', created_at: 'Дата создания', updated_at: 'Дата изменения', closed_at: 'Дата закрытия' },
-  ticket_observers: { ticket_id: 'Тикет', user_id: 'Наблюдатель', created_at: 'Дата добавления' },
-  ticket_assignments: { id: 'Идентификатор', ticket_id: 'Тикет', support_group_id: 'Группа поддержки', assignee_id: 'Исполнитель', assigned_by: 'Назначил', reason: 'Причина назначения', started_at: 'Назначено с', ended_at: 'Назначено по' },
-  ticket_comments: { id: 'Идентификатор', ticket_id: 'Тикет', author_id: 'Автор', body: 'Текст комментария', is_internal: 'Внутренний комментарий', created_at: 'Дата создания' },
-  ticket_sla_instances: { id: 'Идентификатор', ticket_id: 'Тикет', policy_id: 'Политика SLA', calendar_code: 'Рабочий календарь', target_at: 'Целевой срок', breached_at: 'Нарушено в', paused_at: 'Приостановлено в', completed_at: 'Завершено в', status: 'Статус', policy_version: 'Версия политики' },
+  tickets: { id: 'Идентификатор', number: 'Номер обращения', subject: 'Тема обращения', description: 'Описание', created_by: 'Создатель', organization_id: 'Организация', department_id: 'Подразделение', territory_id: 'Территория', category_id: 'Категория', ticket_type_id: 'Тип заявки', ticket_kind_id: 'Вид заявки', equipment_id: 'Оборудование', project_id: 'Проект', priority: 'Приоритет', status: 'Статус', support_group_id: 'Группа поддержки', assignee_id: 'Исполнитель', sla_policy_id: 'Политика SLA', route_version: 'Версия маршрута', approval_required: 'Требует согласования', visit_required: 'Требует выезда', repair_required: 'Требуется ремонт', created_at: 'Дата создания', updated_at: 'Дата изменения', closed_at: 'Дата закрытия' },
+  ticket_observers: { ticket_id: 'Обращение', user_id: 'Наблюдатель', created_at: 'Дата добавления' },
+  ticket_assignments: { id: 'Идентификатор', ticket_id: 'Обращение', support_group_id: 'Группа поддержки', assignee_id: 'Исполнитель', assigned_by: 'Назначил', reason: 'Причина назначения', started_at: 'Назначено с', ended_at: 'Назначено по' },
+  ticket_comments: { id: 'Идентификатор', ticket_id: 'Обращение', author_id: 'Автор', body: 'Текст комментария', is_internal: 'Внутренний комментарий', created_at: 'Дата создания' },
+  ticket_sla_instances: { id: 'Идентификатор', ticket_id: 'Обращение', policy_id: 'Политика SLA', calendar_code: 'Рабочий календарь', target_at: 'Целевой срок', breached_at: 'Нарушено в', paused_at: 'Приостановлено в', completed_at: 'Завершено в', status: 'Статус', policy_version: 'Версия политики' },
   audit_log: { id: 'Идентификатор', occurred_at: 'Дата события', actor_id: 'Инициатор', actor_type: 'Тип инициатора', action: 'Действие', resource_type: 'Тип объекта', resource_id: 'Идентификатор объекта', before_data: 'Данные до изменения', after_data: 'Данные после изменения', reason: 'Причина', correlation_id: 'Идентификатор корреляции', decision_id: 'Идентификатор решения', ip: 'IP-адрес', user_agent: 'Браузер' },
   nomenclature: { id: 'Идентификатор', code: 'Код номенклатуры', name: 'Наименование', category: 'Категория', unit: 'Единица измерения', is_active: 'Активна', created_at: 'Дата создания', updated_at: 'Дата изменения' },
   warehouses: { id: 'Идентификатор', code: 'Код склада', name: 'Наименование склада', organization_id: 'Организация', address: 'Адрес', is_active: 'Активен', created_at: 'Дата создания' },

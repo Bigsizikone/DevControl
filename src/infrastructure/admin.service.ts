@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import type { QueryResultRow } from 'pg';
 import { DatabaseService } from './database.service';
-import { ADMIN_FIELD_LABELS, ADMIN_REFERENCE_COLUMNS, ADMIN_TABLE_LABELS, type AdminReference } from './admin-catalog';
+import { ADMIN_FIELD_LABELS, ADMIN_REFERENCE_COLUMNS, ADMIN_TABLE_BLOCKS, ADMIN_TABLE_LABELS, type AdminReference } from './admin-catalog';
 
 const ADMIN_TABLES = [
   'users', 'roles', 'permissions', 'user_roles', 'role_permissions',
@@ -43,7 +43,7 @@ export class AdminService {
     );
     const tables = await Promise.all(result.rows.map(async ({ table_name }) => {
       const count = await this.database.query<{ count: string }>(`SELECT count(*)::text AS count FROM ${this.identifier(table_name)}`);
-      return { name: table_name, label: ADMIN_TABLE_LABELS[table_name] ?? 'Раздел НСИ', rowCount: Number(count.rows[0]?.count ?? 0) };
+      return { name: table_name, label: ADMIN_TABLE_LABELS[table_name] ?? 'Раздел НСИ', block: ADMIN_TABLE_BLOCKS[table_name] ?? 'Прочее', rowCount: Number(count.rows[0]?.count ?? 0) };
     }));
     return { tables };
   }

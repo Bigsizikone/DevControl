@@ -14,10 +14,12 @@ import { AssetsService } from './infrastructure/assets.service';
 import { CamerasController } from './http/cameras.controller';
 import { CameraService } from './infrastructure/camera.service';
 import { CameraEventBus } from './domain/camera.events';
+import { SecurityController } from './http/security.controller';
+import { SecurityService } from './infrastructure/security.service';
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [AccessController, RoutingController, HealthController, AdminController, TicketsController, AssetsController, CamerasController],
-  providers: [AccessService, RoutingService, AdminService, TicketsService, AssetsService, CameraService, CameraEventBus],
+  controllers: [AccessController, RoutingController, HealthController, AdminController, TicketsController, AssetsController, CamerasController, SecurityController],
+  providers: [AccessService, RoutingService, AdminService, TicketsService, AssetsService, CameraService, CameraEventBus, SecurityService],
 })
 export class AppModule {}

@@ -7,5 +7,6 @@ frontend/dist/
 *.local
 *.tgz
 coverage/
+storage/
 .DS_Store
 Thumbs.db
