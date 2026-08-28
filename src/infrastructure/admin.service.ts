@@ -11,6 +11,7 @@ const ADMIN_TABLES = [
   'ticket_type_competencies', 'routing_rules', 'routing_rule_versions',
   'nomenclature', 'warehouses', 'warehouse_stock', 'equipment_items', 'equipment_movements', 'inventory_receipts', 'system_integrations',
   'camera_work_shifts', 'camera_schedule_templates', 'camera_violations', 'camera_violation_attachments', 'camera_schedule_recommendations',
+  'development_statuses', 'development_cards', 'development_task_watchers', 'development_task_comments',
 ] as const;
 
 type Column = {
