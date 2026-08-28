@@ -40,14 +40,16 @@ export class TicketsService {
   async listDocuments(options: { developmentOnly?: boolean; boardId?: string } = {}) {
     const conditions: string[] = [];
     const params: string[] = [];
-    if (options.developmentOnly) conditions.push("t.development_required = true", "db.status = 'Ведется разработка функционала'", 'db.system_id IS NOT NULL', 'tk.system_id = db.system_id');
+    if (options.developmentOnly) conditions.push("t.development_required = true", "dc.id IS NOT NULL", "db.status = 'Ведется разработка функционала'", 'db.system_id IS NOT NULL', 'dc.system_id = db.system_id', 'tk.system_id = db.system_id');
     if (options.boardId) { params.push(options.boardId); conditions.push(`t.development_board_id = $${params.length}`); }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const result = await this.database.query(
       `SELECT t.id, t.number, t.subject, t.description, t.status, t.created_at,
               t.visit_required, t.visit_scheduled_at,
               t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id,
-              t.development_required, t.development_status, t.development_board_id,
+              t.development_required, COALESCE(dc.status, t.development_status) AS development_status, t.development_board_id,
+              dc.id AS development_card_id, dc.number AS development_card_number, dc.code AS development_card_code,
+              dc.title AS development_card_title, dc.description AS development_card_description,
               db.name AS development_board_name, db.system_id AS development_system_id,
               systems.name AS development_system_name,
               tt.name AS ticket_type_name, tk.name AS ticket_kind_name,
@@ -58,6 +60,7 @@ export class TicketsService {
        LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id
        LEFT JOIN development_boards db ON db.id = t.development_board_id
        LEFT JOIN systems ON systems.id = db.system_id
+       LEFT JOIN development_cards dc ON dc.ticket_id = t.id
        LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
        LEFT JOIN users assignee ON assignee.id = t.assignee_id
        ${where}
@@ -75,7 +78,9 @@ export class TicketsService {
       `SELECT t.id, t.number, t.subject, t.description, t.status, t.priority, t.created_at,
               t.visit_required, t.visit_scheduled_at,
               t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id,
-              t.development_required, t.development_status, t.development_board_id,
+              t.development_required, COALESCE(dc.status, t.development_status) AS development_status, t.development_board_id,
+              dc.id AS development_card_id, dc.number AS development_card_number, dc.code AS development_card_code,
+              dc.title AS development_card_title, dc.description AS development_card_description,
               db.name AS development_board_name, db.system_id AS development_system_id,
               systems.name AS development_system_name,
               tt.name AS ticket_type_name, tk.name AS ticket_kind_name,
@@ -86,6 +91,7 @@ export class TicketsService {
        LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id
        LEFT JOIN development_boards db ON db.id = t.development_board_id
        LEFT JOIN systems ON systems.id = db.system_id
+       LEFT JOIN development_cards dc ON dc.ticket_id = t.id
        LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
        LEFT JOIN users assignee ON assignee.id = t.assignee_id
        WHERE t.id = $1`, [id],
@@ -178,6 +184,13 @@ export class TicketsService {
        RETURNING id, number, subject, description, status, created_at`,
       [userId, subject, description, typeId, kindId, equipmentId, developmentRequired, developmentRequired ? developmentBoardId : ''],
     );
+    if (developmentRequired && ticket.rows[0] && kind.rows[0]?.system_id) {
+      await this.database.query(
+        `INSERT INTO development_cards (ticket_id, board_id, system_id, title, description)
+         VALUES ($1, $2, $3, $4, NULLIF($5, ''))`,
+        [ticket.rows[0].id, developmentBoardId, kind.rows[0].system_id, subject, description],
+      );
+    }
     return { ticket: { ...ticket.rows[0], requester_name: user.rows[0].display_name, requester_email: user.rows[0].email } };
   }
 }

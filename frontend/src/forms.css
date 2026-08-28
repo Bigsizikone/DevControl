@@ -249,6 +249,166 @@
   background: #f3f8ff;
 }
 
+.development-issue-page {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.ticket-detail-only .ticket-document-layout {
+  display: none;
+}
+
+.ticket-detail-only .ticket-detail-panel {
+  margin-top: 0;
+}
+
+.development-parent-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #d9e4ef;
+  border-radius: 10px;
+  background: #f6f9fd;
+  color: #526b86;
+  font-size: 12px;
+}
+
+.development-parent-link strong {
+  color: #397bdc;
+}
+
+.development-parent-link .primary-button {
+  width: auto;
+  white-space: nowrap;
+}
+
+.development-back-button {
+  width: auto;
+  margin-bottom: 18px;
+}
+
+.development-issue-card {
+  padding: 28px;
+}
+
+.development-issue-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #dfe8f2;
+}
+
+.development-issue-head h1 {
+  margin: 10px 0 8px;
+  color: #1d314b;
+  font-family: 'Space Grotesk';
+  font-size: 28px;
+  letter-spacing: -.7px;
+}
+
+.development-issue-head p {
+  margin: 0;
+  color: #71849a;
+  font-size: 12px;
+}
+
+.development-issue-key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: #397bdc;
+  font-family: 'Space Grotesk';
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.development-issue-key span,
+.development-issue-flag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #b9d4f3;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #edf5ff;
+  color: #3973c5;
+  font-family: 'DM Sans';
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.development-issue-flag {
+  white-space: nowrap;
+  border-color: #b8e3d2;
+  background: #eaf8f2;
+  color: #21775e;
+}
+
+.development-issue-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.development-issue-meta > div {
+  min-height: 82px;
+  padding: 13px;
+  border: 1px solid #d9e4ef;
+  border-radius: 10px;
+  background: #f6f9fd;
+}
+
+.development-issue-meta small,
+.development-issue-meta span,
+.development-issue-description small {
+  display: block;
+  color: #71849a;
+  font-size: 10px;
+}
+
+.development-issue-meta strong {
+  display: block;
+  margin-top: 7px;
+  color: #2b4664;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.development-issue-meta span {
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.development-issue-description {
+  padding: 18px;
+  border: 1px solid #d9e4ef;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.development-issue-description p {
+  margin: 8px 0 0;
+  color: #405a76;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.development-issue-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 22px;
+  color: #71849a;
+  font-size: 10px;
+}
+
 .light-theme .editor-drawer,
 .light-theme .camera-modal,
 .light-theme .security-detail {
@@ -298,6 +458,28 @@ textarea:focus-visible {
 
   .light-theme .form-panel .panel-title {
     margin-bottom: 18px;
+  }
+
+  .development-issue-card {
+    padding: 19px;
+  }
+
+  .development-issue-head {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .development-issue-head h1 {
+    font-size: 23px;
+  }
+
+  .development-issue-meta {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .development-issue-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .light-theme .filter-tabs,

@@ -23,6 +23,7 @@ services:
       - ./database/migrations/012_systems_development_defaults.sql:/docker-entrypoint-initdb.d/012_systems_development_defaults.sql:ro
       - ./database/seed/013_systems_development_defaults_seed.sql:/docker-entrypoint-initdb.d/013_systems_development_defaults_seed.sql:ro
       - ./database/migrations/014_development_board_systems_and_statuses.sql:/docker-entrypoint-initdb.d/014_development_board_systems_and_statuses.sql:ro
+      - ./database/migrations/015_development_cards.sql:/docker-entrypoint-initdb.d/015_development_cards.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U service_desk -d service_desk"]
       interval: 5s
