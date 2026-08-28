@@ -7,7 +7,7 @@ import { ADMIN_FIELD_LABELS, ADMIN_REFERENCE_COLUMNS, ADMIN_TABLE_BLOCKS, ADMIN_
 const ADMIN_TABLES = [
   'users', 'roles', 'permissions', 'user_roles', 'role_permissions',
   'organizations', 'departments', 'territories', 'competencies', 'user_competencies',
-  'support_groups', 'support_group_members', 'categories', 'ticket_types', 'ticket_kinds',
+  'support_groups', 'support_group_members', 'systems', 'categories', 'ticket_types', 'ticket_kinds', 'development_boards',
   'ticket_type_competencies', 'routing_rules', 'routing_rule_versions',
   'nomenclature', 'warehouses', 'warehouse_stock', 'equipment_items', 'equipment_movements', 'inventory_receipts', 'system_integrations',
   'camera_work_shifts', 'camera_schedule_templates', 'camera_violations', 'camera_violation_attachments', 'camera_schedule_recommendations',

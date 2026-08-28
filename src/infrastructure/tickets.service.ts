@@ -15,30 +15,54 @@ export class TicketsService {
   }
 
   async listCatalog() {
-    const [types, kinds, equipment] = await Promise.all([
-      this.database.query('SELECT id, code, name FROM ticket_types WHERE is_active = true ORDER BY name'),
-      this.database.query('SELECT id, ticket_type_id, code, name FROM ticket_kinds WHERE is_active = true ORDER BY name'),
+    const [types, kinds, equipment, developmentBoards] = await Promise.all([
+      this.database.query<{ id: string; code: string; name: string; is_default: boolean }>('SELECT id, code, name, is_default FROM ticket_types WHERE is_active = true ORDER BY is_default DESC, name'),
+      this.database.query('SELECT id, ticket_type_id, system_id, code, name FROM ticket_kinds WHERE is_active = true ORDER BY name'),
       this.database.query("SELECT id, inventory_number, name, status FROM equipment_items WHERE is_active = true AND status <> 'written_off' ORDER BY inventory_number"),
+      this.listDevelopmentBoards(),
     ]);
-    return { types: types.rows, kinds: kinds.rows, equipment: equipment.rows };
+    const defaultType = types.rows.find((item: { id: string; is_default?: boolean; name: string }) => item.is_default && item.name === 'Запрос на обслуживание') ?? types.rows.find((item: { id: string; is_default?: boolean }) => item.is_default);
+    return { types: types.rows, kinds: kinds.rows, equipment: equipment.rows, developmentBoards, defaultTypeId: defaultType?.id ?? null };
   }
 
-  async listDocuments() {
+  async listDevelopmentBoards() {
+    const result = await this.database.query(
+      `SELECT id, code, name, status, description
+       FROM development_boards
+       WHERE is_active = true AND status = 'Ведется разработка функционала'
+       ORDER BY name`,
+    );
+    return result.rows;
+  }
+
+  async listDocuments(options: { developmentOnly?: boolean; boardId?: string } = {}) {
+    const conditions: string[] = [];
+    const params: string[] = [];
+    if (options.developmentOnly) conditions.push("t.development_required = true", "db.status = 'Ведется разработка функционала'");
+    if (options.boardId) { params.push(options.boardId); conditions.push(`t.development_board_id = $${params.length}`); }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const result = await this.database.query(
       `SELECT t.id, t.number, t.subject, t.description, t.status, t.created_at,
               t.visit_required, t.visit_scheduled_at,
               t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id,
+              t.development_required, t.development_board_id, db.name AS development_board_name,
               tt.name AS ticket_type_name, tk.name AS ticket_kind_name,
               equipment.inventory_number AS equipment_inventory_number, equipment.name AS equipment_name,
               u.display_name AS requester_name, u.email AS requester_email,
               assignee.display_name AS assignee_name
        FROM tickets t JOIN users u ON u.id = t.created_by
        LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id
+       LEFT JOIN development_boards db ON db.id = t.development_board_id
        LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
        LEFT JOIN users assignee ON assignee.id = t.assignee_id
-       ORDER BY t.created_at DESC LIMIT 100`,
+       ${where}
+       ORDER BY t.created_at DESC LIMIT 100`, params,
     );
     return { tickets: result.rows };
+  }
+
+  async listDevelopmentDocuments(boardId?: string) {
+    return this.listDocuments({ developmentOnly: true, boardId });
   }
 
   async getDocument(id: string) {
@@ -46,12 +70,14 @@ export class TicketsService {
       `SELECT t.id, t.number, t.subject, t.description, t.status, t.priority, t.created_at,
               t.visit_required, t.visit_scheduled_at,
               t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id,
+              t.development_required, t.development_board_id, db.name AS development_board_name,
               tt.name AS ticket_type_name, tk.name AS ticket_kind_name,
               equipment.inventory_number AS equipment_inventory_number, equipment.name AS equipment_name,
               u.display_name AS requester_name, u.email AS requester_email,
               assignee.display_name AS assignee_name
        FROM tickets t JOIN users u ON u.id = t.created_by
        LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id
+       LEFT JOIN development_boards db ON db.id = t.development_board_id
        LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
        LEFT JOIN users assignee ON assignee.id = t.assignee_id
        WHERE t.id = $1`, [id],
@@ -111,7 +137,7 @@ export class TicketsService {
     return { comment: result.rows[0] };
   }
 
-  async createDocument(input: { userId?: string; subject?: string; description?: string; ticketTypeId?: string; ticketKindId?: string; equipmentId?: string }) {
+  async createDocument(input: { userId?: string; subject?: string; description?: string; ticketTypeId?: string; ticketKindId?: string; equipmentId?: string; developmentRequired?: boolean; developmentBoardId?: string }) {
     const userId = String(input.userId ?? '').trim();
     const subject = String(input.subject ?? '').trim();
     const description = String(input.description ?? '').trim();
@@ -123,6 +149,8 @@ export class TicketsService {
     const typeId = String(input.ticketTypeId ?? '').trim();
     const kindId = String(input.ticketKindId ?? '').trim();
     const equipmentId = String(input.equipmentId ?? '').trim();
+    const developmentRequired = Boolean(input.developmentRequired);
+    const developmentBoardId = String(input.developmentBoardId ?? '').trim();
     const kind = kindId ? await this.database.query<{ code: string; name: string }>('SELECT tk.code, tk.name FROM ticket_kinds tk WHERE tk.id = $1 AND tk.ticket_type_id = $2 AND tk.is_active = true', [kindId, typeId]) : { rows: [] };
     const type = typeId ? await this.database.query<{ name: string }>('SELECT name FROM ticket_types WHERE id = $1 AND is_active = true', [typeId]) : { rows: [] };
     const equipmentRequired = kind.rows[0]?.code === 'repair' || type.rows[0]?.name === 'Запрос на обслуживание';
@@ -131,11 +159,15 @@ export class TicketsService {
       const equipment = await this.database.query('SELECT id FROM equipment_items WHERE id = $1 AND is_active = true', [equipmentId]);
       if (!equipment.rows[0]) throw new NotFoundException('Оборудование не найдено');
     }
+    if (developmentRequired) {
+      const board = await this.database.query("SELECT id FROM development_boards WHERE id = $1 AND is_active = true AND status = 'Ведется разработка функционала'", [developmentBoardId]);
+      if (!board.rows[0]) throw new BadRequestException('Выберите доску разработки со статусом «Ведется разработка функционала»');
+    }
     const ticket = await this.database.query(
-      `INSERT INTO tickets (created_by, subject, description, ticket_type_id, ticket_kind_id, equipment_id, status)
-       VALUES ($1, $2, NULLIF($3, ''), NULLIF($4, '')::uuid, NULLIF($5, '')::uuid, NULLIF($6, ''), 'new')
+      `INSERT INTO tickets (created_by, subject, description, ticket_type_id, ticket_kind_id, equipment_id, development_required, development_board_id, status)
+       VALUES ($1, $2, NULLIF($3, ''), NULLIF($4, '')::uuid, NULLIF($5, '')::uuid, NULLIF($6, ''), $7, NULLIF($8, '')::uuid, 'new')
        RETURNING id, number, subject, description, status, created_at`,
-      [userId, subject, description, typeId, kindId, equipmentId],
+      [userId, subject, description, typeId, kindId, equipmentId, developmentRequired, developmentRequired ? developmentBoardId : ''],
     );
     return { ticket: { ...ticket.rows[0], requester_name: user.rows[0].display_name, requester_email: user.rows[0].email } };
   }

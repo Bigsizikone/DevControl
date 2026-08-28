@@ -18,6 +18,10 @@ services:
       - ./database/migrations/007_ticket_equipment_flow.sql:/docker-entrypoint-initdb.d/007_ticket_equipment_flow.sql:ro
       - ./database/migrations/008_camera_module.sql:/docker-entrypoint-initdb.d/008_camera_module.sql:ro
       - ./database/seed/009_camera_seed.sql:/docker-entrypoint-initdb.d/009_camera_seed.sql:ro
+      - ./database/migrations/010_security_module.sql:/docker-entrypoint-initdb.d/010_security_module.sql:ro
+      - ./database/seed/011_security_seed.sql:/docker-entrypoint-initdb.d/011_security_seed.sql:ro
+      - ./database/migrations/012_systems_development_defaults.sql:/docker-entrypoint-initdb.d/012_systems_development_defaults.sql:ro
+      - ./database/seed/013_systems_development_defaults_seed.sql:/docker-entrypoint-initdb.d/013_systems_development_defaults_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U service_desk -d service_desk"]
       interval: 5s

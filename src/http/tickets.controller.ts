@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { TicketsService } from '../infrastructure/tickets.service';
 
 @Controller('tickets')
@@ -10,6 +10,12 @@ export class TicketsController {
 
   @Get('catalog')
   catalog() { return this.tickets.listCatalog(); }
+
+  @Get('development-boards')
+  developmentBoards() { return this.tickets.listDevelopmentBoards(); }
+
+  @Get('development')
+  development(@Query('boardId') boardId?: string) { return this.tickets.listDevelopmentDocuments(boardId); }
 
   @Get()
   list() { return this.tickets.listDocuments(); }
@@ -24,5 +30,5 @@ export class TicketsController {
   comment(@Param('id') id: string, @Body() body: { body?: string; authorId?: string }) { return this.tickets.addComment(id, body); }
 
   @Post()
-  create(@Body() body: { userId?: string; subject?: string; description?: string; ticketTypeId?: string; ticketKindId?: string; equipmentId?: string }) { return this.tickets.createDocument(body); }
+  create(@Body() body: { userId?: string; subject?: string; description?: string; ticketTypeId?: string; ticketKindId?: string; equipmentId?: string; developmentRequired?: boolean; developmentBoardId?: string }) { return this.tickets.createDocument(body); }
 }

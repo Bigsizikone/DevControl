@@ -217,6 +217,38 @@
   background: linear-gradient(145deg, #f0f6ff, #f7fbff);
 }
 
+.light-theme .board-selector {
+  display: grid;
+  min-width: 290px;
+  gap: 6px;
+  color: #536981;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.light-theme .board-selector select {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #cbd8e7;
+  border-radius: 10px;
+  background: #fff;
+  color: #203650;
+  font-size: 13px;
+}
+
+.light-theme .board-selector small {
+  color: #7c8da3;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.light-theme .development-toggle {
+  padding: 12px 14px;
+  border: 1px solid #d5e3f3;
+  border-radius: 10px;
+  background: #f3f8ff;
+}
+
 .light-theme .editor-drawer,
 .light-theme .camera-modal,
 .light-theme .security-detail {
@@ -257,6 +289,11 @@ textarea:focus-visible {
   .light-theme .report-detail,
   .light-theme .security-editor {
     padding: 18px;
+  }
+
+  .light-theme .board-selector {
+    width: 100%;
+    min-width: 0;
   }
 
   .light-theme .form-panel .panel-title {
