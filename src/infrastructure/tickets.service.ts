@@ -27,10 +27,12 @@ export class TicketsService {
 
   async listDevelopmentBoards() {
     const result = await this.database.query(
-      `SELECT id, code, name, status, description
-       FROM development_boards
-       WHERE is_active = true AND status = 'Ведется разработка функционала'
-       ORDER BY name`,
+      `SELECT db.id, db.code, db.name, db.status, db.description,
+              db.system_id, s.name AS system_name
+       FROM development_boards db
+       JOIN systems s ON s.id = db.system_id AND s.is_active = true
+       WHERE db.is_active = true AND db.status = 'Ведется разработка функционала'
+       ORDER BY db.name`,
     );
     return result.rows;
   }
@@ -38,14 +40,16 @@ export class TicketsService {
   async listDocuments(options: { developmentOnly?: boolean; boardId?: string } = {}) {
     const conditions: string[] = [];
     const params: string[] = [];
-    if (options.developmentOnly) conditions.push("t.development_required = true", "db.status = 'Ведется разработка функционала'");
+    if (options.developmentOnly) conditions.push("t.development_required = true", "db.status = 'Ведется разработка функционала'", 'db.system_id IS NOT NULL', 'tk.system_id = db.system_id');
     if (options.boardId) { params.push(options.boardId); conditions.push(`t.development_board_id = $${params.length}`); }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const result = await this.database.query(
       `SELECT t.id, t.number, t.subject, t.description, t.status, t.created_at,
               t.visit_required, t.visit_scheduled_at,
               t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id,
-              t.development_required, t.development_board_id, db.name AS development_board_name,
+              t.development_required, t.development_status, t.development_board_id,
+              db.name AS development_board_name, db.system_id AS development_system_id,
+              systems.name AS development_system_name,
               tt.name AS ticket_type_name, tk.name AS ticket_kind_name,
               equipment.inventory_number AS equipment_inventory_number, equipment.name AS equipment_name,
               u.display_name AS requester_name, u.email AS requester_email,
@@ -53,6 +57,7 @@ export class TicketsService {
        FROM tickets t JOIN users u ON u.id = t.created_by
        LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id
        LEFT JOIN development_boards db ON db.id = t.development_board_id
+       LEFT JOIN systems ON systems.id = db.system_id
        LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
        LEFT JOIN users assignee ON assignee.id = t.assignee_id
        ${where}
@@ -70,7 +75,9 @@ export class TicketsService {
       `SELECT t.id, t.number, t.subject, t.description, t.status, t.priority, t.created_at,
               t.visit_required, t.visit_scheduled_at,
               t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id,
-              t.development_required, t.development_board_id, db.name AS development_board_name,
+              t.development_required, t.development_status, t.development_board_id,
+              db.name AS development_board_name, db.system_id AS development_system_id,
+              systems.name AS development_system_name,
               tt.name AS ticket_type_name, tk.name AS ticket_kind_name,
               equipment.inventory_number AS equipment_inventory_number, equipment.name AS equipment_name,
               u.display_name AS requester_name, u.email AS requester_email,
@@ -78,6 +85,7 @@ export class TicketsService {
        FROM tickets t JOIN users u ON u.id = t.created_by
        LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id
        LEFT JOIN development_boards db ON db.id = t.development_board_id
+       LEFT JOIN systems ON systems.id = db.system_id
        LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
        LEFT JOIN users assignee ON assignee.id = t.assignee_id
        WHERE t.id = $1`, [id],
@@ -151,7 +159,7 @@ export class TicketsService {
     const equipmentId = String(input.equipmentId ?? '').trim();
     const developmentRequired = Boolean(input.developmentRequired);
     const developmentBoardId = String(input.developmentBoardId ?? '').trim();
-    const kind = kindId ? await this.database.query<{ code: string; name: string }>('SELECT tk.code, tk.name FROM ticket_kinds tk WHERE tk.id = $1 AND tk.ticket_type_id = $2 AND tk.is_active = true', [kindId, typeId]) : { rows: [] };
+    const kind = kindId ? await this.database.query<{ code: string; name: string; system_id: string | null }>('SELECT tk.code, tk.name, tk.system_id FROM ticket_kinds tk WHERE tk.id = $1 AND tk.ticket_type_id = $2 AND tk.is_active = true', [kindId, typeId]) : { rows: [] };
     const type = typeId ? await this.database.query<{ name: string }>('SELECT name FROM ticket_types WHERE id = $1 AND is_active = true', [typeId]) : { rows: [] };
     const equipmentRequired = kind.rows[0]?.code === 'repair' || type.rows[0]?.name === 'Запрос на обслуживание';
     if (equipmentRequired && !equipmentId) throw new BadRequestException('Для запроса на обслуживание выберите оборудование');
@@ -160,7 +168,8 @@ export class TicketsService {
       if (!equipment.rows[0]) throw new NotFoundException('Оборудование не найдено');
     }
     if (developmentRequired) {
-      const board = await this.database.query("SELECT id FROM development_boards WHERE id = $1 AND is_active = true AND status = 'Ведется разработка функционала'", [developmentBoardId]);
+      if (!kind.rows[0]?.system_id) throw new BadRequestException('Для обращения на разработку укажите вид заявки с системой');
+      const board = await this.database.query<{ id: string }>("SELECT db.id FROM development_boards db WHERE db.id = $1 AND db.is_active = true AND db.status = 'Ведется разработка функционала' AND db.system_id = $2 AND EXISTS (SELECT 1 FROM systems s WHERE s.id = db.system_id AND s.is_active = true)", [developmentBoardId, kind.rows[0].system_id]);
       if (!board.rows[0]) throw new BadRequestException('Выберите доску разработки со статусом «Ведется разработка функционала»');
     }
     const ticket = await this.database.query(
