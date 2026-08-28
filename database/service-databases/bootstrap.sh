@@ -6,6 +6,10 @@ BASE_URL="${POSTGRES_BASE_URL:-postgresql://service_desk:service_desk@postgres:5
 
 until pg_isready -d "$ADMIN_URL" >/dev/null 2>&1; do sleep 2; done
 
+if [ -f /schema/017_architecture_outbox.sql ]; then
+  psql "$BASE_URL/service_desk" -v ON_ERROR_STOP=1 -f /schema/017_architecture_outbox.sql
+fi
+
 for database in identity_db service_desk_db development_db camera_db audit_db notification_db analytics_db file_db; do
   exists="$(psql "$ADMIN_URL" -Atqc "SELECT 1 FROM pg_database WHERE datname = '$database'")"
   if [ "$exists" != "1" ]; then

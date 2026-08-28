@@ -130,6 +130,7 @@ services:
       FILE_DB_PASSWORD: ${FILE_DB_PASSWORD:-file_dev}
     volumes:
       - ./database/service-databases:/schema:ro
+      - ./database/migrations/017_architecture_outbox.sql:/schema/017_architecture_outbox.sql:ro
     entrypoint: ["sh", "/schema/bootstrap.sh"]
     depends_on:
       postgres:
