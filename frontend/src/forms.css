@@ -1,0 +1,279 @@
+.light-theme .panel,
+.light-theme .metric-card {
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(48, 76, 112, .07);
+}
+
+.light-theme .form-panel,
+.light-theme .asset-form-grid,
+.light-theme .report-detail,
+.light-theme .admin-editor,
+.light-theme .security-editor {
+  border-color: #d7e2ee;
+}
+
+.light-theme .form-panel {
+  padding: 24px;
+}
+
+.light-theme .form-panel .panel-title {
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #e4ebf3;
+}
+
+.light-theme .form-panel .panel-title h2 {
+  font-size: 18px;
+  letter-spacing: -.45px;
+}
+
+.light-theme .form-panel label,
+.light-theme .asset-form label,
+.light-theme .asset-form-grid label,
+.light-theme .report-form-grid label,
+.light-theme .drawer-fields label,
+.light-theme .security-editor label {
+  color: #536981;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.light-theme .form-panel label > span,
+.light-theme .asset-form label > span,
+.light-theme .asset-form-grid label > span {
+  float: right;
+  color: #8b9aae;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.light-theme .form-panel input,
+.light-theme .form-panel select,
+.light-theme .form-panel textarea,
+.light-theme .asset-form input,
+.light-theme .asset-form select,
+.light-theme .asset-form textarea,
+.light-theme .asset-form-grid input,
+.light-theme .asset-form-grid select,
+.light-theme .asset-form-grid textarea,
+.light-theme .report-form-grid input,
+.light-theme .report-form-grid select,
+.light-theme .drawer-fields input,
+.light-theme .drawer-fields select,
+.light-theme .security-editor input,
+.light-theme .security-editor select,
+.light-theme .security-editor textarea {
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 11px 14px;
+  border: 1px solid #cbd8e7;
+  border-radius: 10px;
+  background: #fbfdff;
+  color: #203650;
+  font-size: 13px;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.light-theme .form-panel textarea,
+.light-theme .asset-form textarea,
+.light-theme .asset-form-grid textarea,
+.light-theme .security-editor textarea {
+  min-height: 116px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.light-theme .form-panel input::placeholder,
+.light-theme .form-panel textarea::placeholder,
+.light-theme .security-editor input::placeholder,
+.light-theme .security-editor textarea::placeholder {
+  color: #9aaabd;
+}
+
+.light-theme .form-panel input:focus,
+.light-theme .form-panel select:focus,
+.light-theme .form-panel textarea:focus,
+.light-theme .asset-form input:focus,
+.light-theme .asset-form select:focus,
+.light-theme .asset-form textarea:focus,
+.light-theme .asset-form-grid input:focus,
+.light-theme .asset-form-grid select:focus,
+.light-theme .asset-form-grid textarea:focus,
+.light-theme .report-form-grid input:focus,
+.light-theme .report-form-grid select:focus,
+.light-theme .drawer-fields input:focus,
+.light-theme .drawer-fields select:focus,
+.light-theme .security-editor input:focus,
+.light-theme .security-editor select:focus,
+.light-theme .security-editor textarea:focus {
+  border-color: #5b91e8;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(91, 145, 232, .14);
+  outline: 0;
+}
+
+.light-theme .document-user-card {
+  min-height: 62px;
+  padding: 14px;
+  margin: 2px 0 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f1f7ff, #f8fbff);
+  box-shadow: inset 0 0 0 1px rgba(91, 145, 232, .04);
+}
+
+.light-theme .document-user-card .avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #386fc6, #6398eb);
+  color: #fff;
+}
+
+.light-theme .form-panel .primary-button,
+.light-theme .asset-form-actions .primary-button,
+.light-theme .security-editor .primary-button {
+  min-height: 46px;
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: 0 8px 18px rgba(59, 119, 220, .18);
+}
+
+.light-theme .outline-button,
+.light-theme .tool-badge {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+.light-theme .ticket-list-panel,
+.light-theme .report-detail,
+.light-theme .admin-editor {
+  overflow: hidden;
+}
+
+.light-theme .table-wrap table tbody tr:nth-child(even) td {
+  background: #fbfdff;
+}
+
+.light-theme .table-wrap table tbody tr:hover td {
+  background: #eef5ff;
+}
+
+.light-theme th {
+  padding-top: 2px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.light-theme td {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+.light-theme .filter-tabs,
+.light-theme .camera-tabs,
+.light-theme .document-switcher {
+  padding: 5px;
+  border: 1px solid #d9e4ef;
+  border-radius: 12px;
+  background: #edf3fa;
+}
+
+.light-theme .filter-tab,
+.light-theme .camera-tabs button,
+.light-theme .document-switcher button {
+  min-height: 38px;
+  border-radius: 9px;
+  font-weight: 600;
+}
+
+.light-theme .filter-tab.active,
+.light-theme .camera-tabs button.active,
+.light-theme .document-switcher button.active {
+  background: #fff;
+  color: #245da9;
+  box-shadow: 0 3px 10px rgba(49, 85, 130, .12);
+}
+
+.light-theme .camera-filter-grid,
+.light-theme .security-filters {
+  gap: 12px;
+}
+
+.light-theme .camera-filter-grid input,
+.light-theme .camera-filter-grid select,
+.light-theme .security-filters input,
+.light-theme .security-filters select {
+  min-height: 42px;
+  border-radius: 10px;
+  border-color: #cbd8e7;
+  background: #fbfdff;
+  color: #203650;
+}
+
+.light-theme .visit-settings {
+  border-radius: 12px;
+  padding: 18px;
+  background: linear-gradient(145deg, #f0f6ff, #f7fbff);
+}
+
+.light-theme .editor-drawer,
+.light-theme .camera-modal,
+.light-theme .security-detail {
+  border-radius: 16px;
+}
+
+.light-theme .editor-drawer .drawer-head,
+.light-theme .camera-modal .drawer-head,
+.light-theme .security-detail .drawer-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e4ebf3;
+}
+
+.light-theme .close-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.light-theme .close-button:hover {
+  background: #edf3fa;
+  color: #245da9;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(91, 145, 232, .25);
+  outline-offset: 2px;
+}
+
+@media (max-width: 740px) {
+  .light-theme .form-panel,
+  .light-theme .admin-editor,
+  .light-theme .report-detail,
+  .light-theme .security-editor {
+    padding: 18px;
+  }
+
+  .light-theme .form-panel .panel-title {
+    margin-bottom: 18px;
+  }
+
+  .light-theme .filter-tabs,
+  .light-theme .camera-tabs,
+  .light-theme .document-switcher {
+    width: 100%;
+  }
+
+  .light-theme .filter-tab,
+  .light-theme .camera-tabs button,
+  .light-theme .document-switcher button {
+    flex: 1;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
