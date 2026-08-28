@@ -1,0 +1,12 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), external_id text UNIQUE, email text NOT NULL UNIQUE, display_name text NOT NULL, is_active boolean NOT NULL DEFAULT true, department_id uuid, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS roles (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), code text NOT NULL UNIQUE, name text NOT NULL, description text, is_active boolean NOT NULL DEFAULT true);
+CREATE TABLE IF NOT EXISTS permissions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), code text NOT NULL UNIQUE, description text NOT NULL);
+CREATE TABLE IF NOT EXISTS user_roles (user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE, role_id uuid NOT NULL REFERENCES roles(id) ON DELETE CASCADE, assigned_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (user_id, role_id));
+CREATE TABLE IF NOT EXISTS role_permissions (role_id uuid NOT NULL REFERENCES roles(id) ON DELETE CASCADE, permission_id uuid NOT NULL REFERENCES permissions(id) ON DELETE CASCADE, effect text NOT NULL CHECK (effect IN ('allow','deny')), PRIMARY KEY (role_id, permission_id));
+CREATE TABLE IF NOT EXISTS organizations (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), code text UNIQUE NOT NULL, name text NOT NULL, is_active boolean NOT NULL DEFAULT true);
+CREATE TABLE IF NOT EXISTS departments (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid, code text UNIQUE NOT NULL, name text NOT NULL, is_active boolean NOT NULL DEFAULT true);
+CREATE TABLE IF NOT EXISTS identity_sync_state (source text PRIMARY KEY, cursor text, last_sync_at timestamptz, status text NOT NULL DEFAULT 'idle', error text);
+CREATE TABLE IF NOT EXISTS outbox_events (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), event_id uuid NOT NULL UNIQUE, event_type text NOT NULL, event_version integer NOT NULL DEFAULT 1, aggregate_type text NOT NULL, aggregate_id text NOT NULL, correlation_id text NOT NULL, payload jsonb NOT NULL, occurred_at timestamptz NOT NULL DEFAULT now(), published_at timestamptz, attempts integer NOT NULL DEFAULT 0, last_error text);
+CREATE INDEX IF NOT EXISTS identity_outbox_pending_idx ON outbox_events(occurred_at) WHERE published_at IS NULL;
+CREATE INDEX IF NOT EXISTS identity_users_search_idx ON users USING gin (to_tsvector('simple', display_name || ' ' || email));

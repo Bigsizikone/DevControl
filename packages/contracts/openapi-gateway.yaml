@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: DevControl API Gateway
+  version: 1.0.0
+  description: Единая точка входа. Legacy /api сохраняется, новые сервисные контракты доступны через /api/v1.
+servers:
+  - url: /
+paths:
+  /api/v1/identity/users:
+    get:
+      summary: Поиск пользователей через Identity Service
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+      responses: { '200': { description: OK } }
+  /api/v1/tickets:
+    get: { summary: Список обращений, responses: { '200': { description: OK } } }
+    post: { summary: Создание обращения, responses: { '201': { description: Created } } }
+  /api/v1/development/tasks:
+    get: { summary: Kanban-разработка, responses: { '200': { description: OK } } }
+    post: { summary: Создание карточки разработки, responses: { '201': { description: Created } } }
+  /api/v1/development/tasks/{id}/status:
+    patch:
+      summary: Изменение статуса карточки
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: OK }, '403': { description: Forbidden } }
+  /api/v1/analytics/cube/status:
+    get: { summary: Состояние OLAP-куба, responses: { '200': { description: OK } } }
+  /api/v1/analytics/cube/rebuild:
+    post: { summary: Полная пересборка куба (только администратор), responses: { '202': { description: Accepted }, '403': { description: Forbidden } } }

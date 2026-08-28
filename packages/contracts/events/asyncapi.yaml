@@ -1,0 +1,61 @@
+asyncapi: 2.6.0
+info:
+  title: Service Desk domain events
+  version: 1.0.0
+  description: Версионируемые события между доменными сервисами. Публикация выполняется через transactional outbox.
+defaultContentType: application/json
+channels:
+  TicketCreated:
+    publish:
+      message:
+        $ref: '#/components/messages/TicketCreated'
+  TicketUpdated:
+    publish:
+      message:
+        $ref: '#/components/messages/TicketUpdated'
+  DevelopmentTaskCreated:
+    publish:
+      message:
+        $ref: '#/components/messages/DevelopmentTaskCreated'
+  DevelopmentTaskStatusChanged:
+    publish:
+      message:
+        $ref: '#/components/messages/DevelopmentTaskStatusChanged'
+  CameraViolationCreated:
+    publish:
+      message:
+        $ref: '#/components/messages/CameraViolationCreated'
+components:
+  messages:
+    TicketCreated:
+      name: TicketCreated
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+    TicketUpdated:
+      name: TicketUpdated
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+    DevelopmentTaskCreated:
+      name: DevelopmentTaskCreated
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+    DevelopmentTaskStatusChanged:
+      name: DevelopmentTaskStatusChanged
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+    CameraViolationCreated:
+      name: CameraViolationCreated
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+  schemas:
+    EventEnvelope:
+      type: object
+      required: [eventId, eventType, eventVersion, occurredAt, producer, correlationId, payload]
+      properties:
+        eventId: { type: string, format: uuid }
+        eventType: { type: string }
+        eventVersion: { type: integer, minimum: 1 }
+        occurredAt: { type: string, format: date-time }
+        producer: { type: string }
+        correlationId: { type: string }
+        payload: { type: object, additionalProperties: true }

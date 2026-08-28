@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: api-gateway
+    static_configs: [{ targets: ['api-gateway:3000'] }]
+  - job_name: identity-service
+    static_configs: [{ targets: ['identity-service:4001'] }]
+  - job_name: service-desk-service
+    static_configs: [{ targets: ['service-desk-service:4002'] }]
+  - job_name: development-service
+    static_configs: [{ targets: ['development-service:4003'] }]
+  - job_name: camera-service
+    static_configs: [{ targets: ['camera-service:4004'] }]
+  - job_name: analytics-service
+    static_configs: [{ targets: ['analytics-service:4005'] }]
+  - job_name: audit-service
+    static_configs: [{ targets: ['audit-service:4006'] }]
+  - job_name: notification-service
+    static_configs: [{ targets: ['notification-service:4007'] }]
+  - job_name: file-service
+    static_configs: [{ targets: ['file-service:4008'] }]

@@ -97,3 +97,30 @@ Health endpoint дополнительно проверяет соединени
 Конфликты смен проверяются сервером как пересечение временных интервалов; если окончание меньше начала, к окончанию добавляются сутки, поэтому `20:00–08:00` считается 12-часовой ночной сменой. Рекомендации исключают пересечения и рассчитывают оценку по числу смен и рабочих часов сотрудника за последние 30 дней; результат должен быть подтверждён пользователем.
 
 Для локального запуска примените миграции в порядке `001`, `003`, `004`, `005`, `007`, `008`, затем seed `002`, `006`, `009`. В Docker-файле эти файлы подключены автоматически.
+
+## Микросервисный контур
+
+Архитектурный рефакторинг добавлен поэтапно и обратно совместимо:
+
+- `apps/api-gateway` — единая точка входа с `/api/v1/*`, request/correlation ID, rate limit и legacy-проксированием `/api/*`;
+- `services/identity-service`, `service-desk-service`, `development-service`, `camera-service`, `analytics-service`, `audit-service`, `notification-service`, `file-service` — независимые приложения с собственными health endpoints;
+- `services/outbox-relay` — публикация transactional outbox в RabbitMQ;
+- `database/service-databases` — отдельные схемы `identity_db`, `service_desk_db`, `development_db`, `camera_db`, `audit_db`, `notification_db`, `analytics_db`, `file_db`;
+- Redis — отключаемый cache-aside с namespace и TTL;
+- RabbitMQ — durable topic exchange для доменных событий;
+- Analytics DB — Star Schema, SCD Type 2 dimensions и управление cube runs;
+- MinIO — S3-compatible object storage для File Service.
+
+Для запуска целевого dev-контура:
+
+```bash
+docker compose -f docker-compose.deploy.yml up -d --build
+```
+
+Gateway доступен на `http://localhost:3000`, legacy API — на `http://localhost:3001`, frontend через nginx — на `http://localhost:3002`, Grafana — на `http://localhost:3003`, Prometheus — на `http://localhost:9090`. ClickHouse запускается профилем `olap`:
+
+```bash
+docker compose -f docker-compose.deploy.yml --profile olap up -d clickhouse
+```
+
+Подробная схема, владельцы данных, события, OLAP, миграция и риски описаны в [docs/architecture/microservices.md](docs/architecture/microservices.md). Контракты находятся в `packages/contracts`.

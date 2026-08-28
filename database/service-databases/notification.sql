@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS notifications (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), event_id uuid NOT NULL, user_id uuid NOT NULL, channel text NOT NULL, title text NOT NULL, body text NOT NULL, status text NOT NULL DEFAULT 'pending', created_at timestamptz NOT NULL DEFAULT now(), sent_at timestamptz);
+CREATE TABLE IF NOT EXISTS processed_events (event_id uuid NOT NULL, consumer text NOT NULL, processed_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(event_id,consumer));

@@ -25,6 +25,7 @@ services:
       - ./database/migrations/014_development_board_systems_and_statuses.sql:/docker-entrypoint-initdb.d/014_development_board_systems_and_statuses.sql:ro
       - ./database/migrations/015_development_cards.sql:/docker-entrypoint-initdb.d/015_development_cards.sql:ro
       - ./database/migrations/016_development_module.sql:/docker-entrypoint-initdb.d/016_development_module.sql:ro
+      - ./database/migrations/017_architecture_outbox.sql:/docker-entrypoint-initdb.d/017_architecture_outbox.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U service_desk -d service_desk"]
       interval: 5s
@@ -49,6 +50,11 @@ services:
         condition: service_healthy
     ports:
       - "3001:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health/live >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   service-desk-frontend:
     build:
@@ -57,10 +63,331 @@ services:
     container_name: service-desk-frontend
     restart: unless-stopped
     depends_on:
-      - service-desk-api
+      - api-gateway
     ports:
       - "3002:80"
+
+  redis:
+    image: redis:7-alpine
+    container_name: service-desk-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: service-desk-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: service_desk
+      RABBITMQ_DEFAULT_PASS: service_desk
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  minio:
+    image: minio/minio:latest
+    container_name: service-desk-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    command: server /data --console-address ":9001"
+    volumes:
+      - service_desk_minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  service-db-bootstrap:
+    image: postgres:16-alpine
+    container_name: service-desk-service-db-bootstrap
+    restart: "no"
+    environment:
+      POSTGRES_ADMIN_URL: postgresql://service_desk:service_desk@postgres:5432/postgres
+      POSTGRES_BASE_URL: postgresql://service_desk:service_desk@postgres:5432
+      IDENTITY_DB_USER: ${IDENTITY_DB_USER:-identity_app}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-identity_dev}
+      SERVICE_DESK_DB_USER: ${SERVICE_DESK_DB_USER:-servicedesk_app}
+      SERVICE_DESK_DB_PASSWORD: ${SERVICE_DESK_DB_PASSWORD:-servicedesk_dev}
+      DEVELOPMENT_DB_USER: ${DEVELOPMENT_DB_USER:-development_app}
+      DEVELOPMENT_DB_PASSWORD: ${DEVELOPMENT_DB_PASSWORD:-development_dev}
+      CAMERA_DB_USER: ${CAMERA_DB_USER:-camera_app}
+      CAMERA_DB_PASSWORD: ${CAMERA_DB_PASSWORD:-camera_dev}
+      AUDIT_DB_USER: ${AUDIT_DB_USER:-audit_app}
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:-audit_dev}
+      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER:-notification_app}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-notification_dev}
+      ANALYTICS_DB_USER: ${ANALYTICS_DB_USER:-analytics_app}
+      ANALYTICS_DB_PASSWORD: ${ANALYTICS_DB_PASSWORD:-analytics_dev}
+      FILE_DB_USER: ${FILE_DB_USER:-file_app}
+      FILE_DB_PASSWORD: ${FILE_DB_PASSWORD:-file_dev}
+    volumes:
+      - ./database/service-databases:/schema:ro
+    entrypoint: ["sh", "/schema/bootstrap.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: service-desk-api-gateway
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      LEGACY_MONOLITH_URL: http://service-desk-api:3000
+      IDENTITY_SERVICE_URL: http://identity-service:4001
+      SERVICE_DESK_SERVICE_URL: http://service-desk-service:4002
+      DEVELOPMENT_SERVICE_URL: http://development-service:4003
+      CAMERA_SERVICE_URL: http://camera-service:4004
+      ANALYTICS_SERVICE_URL: http://analytics-service:4005
+      GATEWAY_MAX_BODY_BYTES: 52428800
+      GATEWAY_TIMEOUT_MS: 15000
+      GATEWAY_RATE_LIMIT: 600
+      GATEWAY_REQUIRE_AUTH: ${GATEWAY_REQUIRE_AUTH:-false}
+      GATEWAY_DEV_TOKEN: ${GATEWAY_DEV_TOKEN:-}
+    depends_on:
+      service-desk-api:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+      service-desk-service:
+        condition: service_started
+      development-service:
+        condition: service_started
+      camera-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  identity-service:
+    build: { context: ., dockerfile: services/identity-service/Dockerfile }
+    container_name: service-desk-identity-service
+    restart: unless-stopped
+    environment:
+      PORT: 4001
+      IDENTITY_DATABASE_URL: postgresql://${IDENTITY_DB_USER:-identity_app}:${IDENTITY_DB_PASSWORD:-identity_dev}@postgres:5432/identity_db
+      REDIS_URL: redis://redis:6379
+      CACHE_USER_TTL: 600
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, redis: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4001/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  service-desk-service:
+    build: { context: ., dockerfile: services/service-desk-service/Dockerfile }
+    container_name: service-desk-domain-service
+    restart: unless-stopped
+    environment:
+      PORT: 4002
+      SERVICE_DESK_DATABASE_URL: postgresql://${SERVICE_DESK_DB_USER:-servicedesk_app}:${SERVICE_DESK_DB_PASSWORD:-servicedesk_dev}@postgres:5432/service_desk_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+      CACHE_TICKET_TTL: 60
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, redis: { condition: service_healthy }, rabbitmq: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4002/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  development-service:
+    build: { context: ., dockerfile: services/development-service/Dockerfile }
+    container_name: service-desk-development-service
+    restart: unless-stopped
+    environment:
+      PORT: 4003
+      DEVELOPMENT_DATABASE_URL: postgresql://${DEVELOPMENT_DB_USER:-development_app}:${DEVELOPMENT_DB_PASSWORD:-development_dev}@postgres:5432/development_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+      CACHE_DICTIONARY_TTL: 1800
+      CACHE_KANBAN_TTL: 60
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, redis: { condition: service_healthy }, rabbitmq: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4003/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  camera-service:
+    build: { context: ., dockerfile: services/camera-service/Dockerfile }
+    container_name: service-desk-camera-service
+    restart: unless-stopped
+    environment:
+      PORT: 4004
+      CAMERA_DATABASE_URL: postgresql://${CAMERA_DB_USER:-camera_app}:${CAMERA_DB_PASSWORD:-camera_dev}@postgres:5432/camera_db
+      REDIS_URL: redis://redis:6379
+      CACHE_CAMERA_TTL: 300
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, redis: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4004/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  analytics-service:
+    build: { context: ., dockerfile: services/analytics-service/Dockerfile }
+    container_name: service-desk-analytics-service
+    restart: unless-stopped
+    environment:
+      PORT: 4005
+      ANALYTICS_DATABASE_URL: postgresql://${ANALYTICS_DB_USER:-analytics_app}:${ANALYTICS_DB_PASSWORD:-analytics_dev}@postgres:5432/analytics_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, redis: { condition: service_healthy }, rabbitmq: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4005/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  audit-service:
+    build: { context: ., dockerfile: services/audit-service/Dockerfile }
+    container_name: service-desk-audit-service
+    restart: unless-stopped
+    environment:
+      PORT: 4006
+      AUDIT_DATABASE_URL: postgresql://${AUDIT_DB_USER:-audit_app}:${AUDIT_DB_PASSWORD:-audit_dev}@postgres:5432/audit_db
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, rabbitmq: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4006/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  notification-service:
+    build: { context: ., dockerfile: services/notification-service/Dockerfile }
+    container_name: service-desk-notification-service
+    restart: unless-stopped
+    environment:
+      PORT: 4007
+      NOTIFICATION_DATABASE_URL: postgresql://${NOTIFICATION_DB_USER:-notification_app}:${NOTIFICATION_DB_PASSWORD:-notification_dev}@postgres:5432/notification_db
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, rabbitmq: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4007/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  file-service:
+    build: { context: ., dockerfile: services/file-service/Dockerfile }
+    container_name: service-desk-file-service
+    restart: unless-stopped
+    environment:
+      PORT: 4008
+      FILE_DATABASE_URL: postgresql://${FILE_DB_USER:-file_app}:${FILE_DB_PASSWORD:-file_dev}@postgres:5432/file_db
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      S3_BUCKET: service-desk-files
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, redis: { condition: service_healthy }, minio: { condition: service_started } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4008/health/ready >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  outbox-relay:
+    build: { context: ., dockerfile: services/outbox-relay/Dockerfile }
+    container_name: service-desk-outbox-relay
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: legacy-service-desk
+      OUTBOX_DATABASE_URL: postgresql://service_desk:service_desk@postgres:5432/service_desk
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+      OUTBOX_POLL_INTERVAL_MS: 1000
+    depends_on: { postgres: { condition: service_healthy }, rabbitmq: { condition: service_healthy } }
+
+  identity-outbox-relay:
+    build: { context: ., dockerfile: services/outbox-relay/Dockerfile }
+    container_name: service-desk-identity-outbox-relay
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: identity-service
+      OUTBOX_DATABASE_URL: postgresql://${IDENTITY_DB_USER:-identity_app}:${IDENTITY_DB_PASSWORD:-identity_dev}@postgres:5432/identity_db
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, rabbitmq: { condition: service_healthy } }
+
+  servicedesk-outbox-relay:
+    build: { context: ., dockerfile: services/outbox-relay/Dockerfile }
+    container_name: service-desk-domain-outbox-relay
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: service-desk-service
+      OUTBOX_DATABASE_URL: postgresql://${SERVICE_DESK_DB_USER:-servicedesk_app}:${SERVICE_DESK_DB_PASSWORD:-servicedesk_dev}@postgres:5432/service_desk_db
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, rabbitmq: { condition: service_healthy } }
+
+  development-outbox-relay:
+    build: { context: ., dockerfile: services/outbox-relay/Dockerfile }
+    container_name: service-desk-development-outbox-relay
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: development-service
+      OUTBOX_DATABASE_URL: postgresql://${DEVELOPMENT_DB_USER:-development_app}:${DEVELOPMENT_DB_PASSWORD:-development_dev}@postgres:5432/development_db
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, rabbitmq: { condition: service_healthy } }
+
+  camera-outbox-relay:
+    build: { context: ., dockerfile: services/outbox-relay/Dockerfile }
+    container_name: service-desk-camera-outbox-relay
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: camera-service
+      OUTBOX_DATABASE_URL: postgresql://${CAMERA_DB_USER:-camera_app}:${CAMERA_DB_PASSWORD:-camera_dev}@postgres:5432/camera_db
+      RABBITMQ_URL: amqp://service_desk:service_desk@rabbitmq:5672
+    depends_on: { service-db-bootstrap: { condition: service_completed_successfully }, rabbitmq: { condition: service_healthy } }
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: service-desk-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: service-desk-grafana
+    restart: unless-stopped
+    depends_on: [prometheus]
+    ports:
+      - "3003:3000"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: service-desk-clickhouse
+    profiles: [olap]
+    restart: unless-stopped
+    volumes:
+      - service_desk_clickhouse:/var/lib/clickhouse
+    ports:
+      - "8123:8123"
 
 volumes:
   service_desk_pgdata:
   service_desk_camera_files:
+  service_desk_minio:
+  service_desk_clickhouse:
