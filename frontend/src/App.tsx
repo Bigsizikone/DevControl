@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { EquipmentPanel, IntegrationsPanel, InventoryPanel } from './business-panels';
 import { CamerasPanelV2 as CamerasPanel } from './camera-panel-v2';
 import { SecurityPanel } from './security-panel2';
@@ -21,6 +21,7 @@ type AdminColumn = { name: string; label: string; reference?: AdminReference; da
 type AdminData = { name: string; columns: AdminColumn[]; primaryKey: string[]; rows: Array<Record<string, unknown>>; displayRows?: Array<Record<string, unknown>>; limit: number; offset: number };
 type AdminLookup = { value: string; label: string };
 type HealthResponse = { status: string; database: 'up' | 'down' };
+type NotificationItem = { id: string; title: string; text: string; time: string; unread: boolean };
 type TicketUser = { id: string; display_name: string; email: string; department_name?: string | null };
 type TicketType = { id: string; code: string; name: string; is_default?: boolean };
 type TicketKind = { id: string; ticket_type_id: string; system_id?: string | null; code: string; name: string };
@@ -65,11 +66,40 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [databaseOnline, setDatabaseOnline] = useState<boolean | null>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    { id: 'n1', title: 'Новое обращение', text: 'SD-3 ожидает назначения исполнителя', time: '5 мин назад', unread: true },
+    { id: 'n2', title: 'Изменение статуса', text: 'Обращение DEV-03CE319A переведено в разработку', time: '1 ч назад', unread: true },
+    { id: 'n3', title: 'Напоминание SLA', text: 'Проверьте обращения с высоким приоритетом', time: 'Сегодня', unread: true },
+  ]);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void request<HealthResponse>('/health')
       .then((result) => setDatabaseOnline(result.database === 'up'))
       .catch(() => setDatabaseOnline(false));
+  }, []);
+
+  useEffect(() => {
+    const closePopovers = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!notificationRef.current?.contains(target)) setNotificationsOpen(false);
+      if (!profileRef.current?.contains(target)) setProfileOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setNotificationsOpen(false);
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', closePopovers);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closePopovers);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
   }, []);
 
   const run = async (action: () => Promise<void>) => {
@@ -143,11 +173,11 @@ function App() {
         <div className="brand"><span className="brand-mark">SD</span><span>Service Desk</span></div>
         <div className="workspace-label">КОНТУР УПРАВЛЕНИЯ</div>
         <nav>{navItems.map((item) => <button key={item.id} aria-current={tab === item.id ? 'page' : undefined} className={tab === item.id ? 'nav-item active' : 'nav-item'} onClick={() => { if (item.id === 'tickets') setTicketToOpen(undefined); setTab(item.id); }}><span>{item.icon}</span>{item.label}</button>)}</nav>
-        <div className="sidebar-bottom"><div className="server-status"><span className="status-dot" /> {databaseOnline === null ? 'Проверка API и БД…' : databaseOnline ? 'API и БД онлайн' : 'БД недоступна'}</div><div className="user-chip"><span className="avatar">AK</span><div><strong>Анна Кузнецова</strong><small>Администратор</small></div><span className="chevron">⌄</span></div></div>
+        <div className="sidebar-bottom"><div className="server-status"><span className="status-dot" /> {databaseOnline === null ? 'Проверка API и БД…' : databaseOnline ? 'API и БД онлайн' : 'БД недоступна'}</div><div className="profile-popover-anchor" ref={profileRef}><button type="button" className="user-chip" aria-label="Профиль Анны Кузнецовой" aria-expanded={profileOpen} onClick={() => { setProfileOpen((open) => !open); setNotificationsOpen(false); }}><span className="avatar">AK</span><div><strong>Анна Кузнецова</strong><small>Администратор</small></div><span className="chevron">⌄</span></button>{profileOpen && <div className="profile-popover" role="dialog" aria-label="Профиль пользователя"><div className="profile-popover-head"><span className="avatar">AK</span><div><strong>Анна Кузнецова</strong><small>Администратор</small></div></div><div className="profile-details"><div><span>Логин</span><strong>anna.kuznetsova</strong></div><div><span>Доступ</span><strong>Полный доступ</strong></div></div><div className="profile-menu-actions"><button type="button" className="profile-menu-item" onClick={() => { setTab('tickets'); setTicketToOpen(undefined); setProfileOpen(false); }}><span>□</span> Мои обращения <b>→</b></button><button type="button" className="profile-menu-item" onClick={() => { setTab('access'); setProfileOpen(false); }}><span>◈</span> Проверка доступа <b>→</b></button></div></div>}</div></div>
       </aside>
 
       <main className="main-content">
-        <header className="topbar"><div className="breadcrumbs"><span>Service Desk</span><b>/</b><strong>{navItems.find((item) => item.id === tab)?.label}</strong></div><div className="topbar-actions"><span className="environment"><span className="status-dot" /> Production</span><button className="icon-button" aria-label="Уведомления">♢<i>3</i></button><button className="new-ticket" onClick={() => setTab('routing')}><span>＋</span> Новая заявка</button></div></header>
+        <header className="topbar"><div className="breadcrumbs"><span>Service Desk</span><b>/</b><strong>{navItems.find((item) => item.id === tab)?.label}</strong></div><div className="topbar-actions"><span className="environment"><span className="status-dot" /> Production</span><div className="notification-popover-anchor" ref={notificationRef}><button type="button" className={notificationsOpen ? 'icon-button active' : 'icon-button'} aria-label="Уведомления" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen((open) => !open); setProfileOpen(false); }}>♢{notifications.filter((item) => item.unread).length > 0 && <i>{notifications.filter((item) => item.unread).length}</i>}</button>{notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Уведомления"><div className="notification-popover-head"><div><strong>Уведомления</strong><small>{notifications.filter((item) => item.unread).length ? `${notifications.filter((item) => item.unread).length} новых` : 'Нет новых уведомлений'}</small></div><button type="button" className="notification-mark-read" onClick={() => setNotifications((items) => items.map((item) => ({ ...item, unread: false })))}>Отметить всё прочитанным</button></div><div className="notification-list">{notifications.map((item) => <button type="button" key={item.id} className={item.unread ? 'notification-item unread' : 'notification-item'} onClick={() => setNotifications((items) => items.map((current) => current.id === item.id ? { ...current, unread: false } : current))}><span className="notification-dot" /><span><strong>{item.title}</strong><small>{item.text}</small><em>{item.time}</em></span></button>)}</div><button type="button" className="notification-footer" onClick={() => { setTab('tickets'); setTicketToOpen(undefined); setNotificationsOpen(false); }}>Открыть обращения →</button></div>}</div><button className="new-ticket" onClick={() => setTab('routing')}><span>＋</span> Новая заявка</button></div></header>
         <section className="content">
           {tab === 'overview' && <Overview onAccess={() => setTab('access')} onRouting={() => setTab('routing')} onReports={() => setTab('reports')} onOpenTicket={(id) => { setTicketToOpen(id); setTab('tickets'); }} onEquipment={() => setTab('equipment')} />}
           {tab === 'tickets' && <TicketPanel key={ticketToOpen ?? 'ticket-list'} initialTicketId={ticketToOpen} standalone={Boolean(ticketToOpen)} onClose={() => setTicketToOpen(undefined)} />}

@@ -761,3 +761,252 @@ textarea:focus-visible {
     padding-right: 8px;
   }
 }
+
+/* Интерактивные панели профиля и уведомлений */
+.notification-popover-anchor,
+.profile-popover-anchor {
+  position: relative;
+}
+
+.light-theme .icon-button.active {
+  color: #397bdc;
+  background: #edf4ff;
+  border-radius: 9px;
+}
+
+.light-theme .user-chip {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.light-theme .user-chip:hover,
+.light-theme .user-chip[aria-expanded='true'] {
+  background: #f0f5fb;
+}
+
+.notification-popover,
+.profile-popover {
+  position: absolute;
+  z-index: 30;
+  border: 1px solid #d8e3ef;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 42px rgba(35, 65, 100, .18);
+  color: #263b55;
+}
+
+.notification-popover {
+  top: calc(100% + 13px);
+  right: -8px;
+  width: min(370px, calc(100vw - 34px));
+  overflow: hidden;
+}
+
+.profile-popover {
+  bottom: calc(100% + 12px);
+  left: -5px;
+  width: 282px;
+  padding: 15px;
+}
+
+.notification-popover-head,
+.profile-popover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px 13px;
+  border-bottom: 1px solid #e5edf5;
+}
+
+.notification-popover-head strong,
+.profile-popover-head strong {
+  display: block;
+  color: #213650;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notification-popover-head small,
+.profile-popover-head small {
+  display: block;
+  margin-top: 4px;
+  color: #7a8da3;
+  font-size: 10px;
+}
+
+.notification-mark-read {
+  border: 0;
+  background: transparent;
+  color: #397bdc;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 3px 0;
+  white-space: nowrap;
+}
+
+.notification-mark-read:hover,
+.notification-footer:hover {
+  color: #245da9;
+}
+
+.notification-list {
+  max-height: 285px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  padding: 13px 16px;
+  border: 0;
+  border-bottom: 1px solid #edf2f7;
+  background: #fff;
+  color: #51677f;
+  cursor: pointer;
+  text-align: left;
+}
+
+.notification-item:hover,
+.notification-item.unread:hover {
+  background: #f3f7fc;
+}
+
+.notification-item.unread {
+  background: #f8fbff;
+}
+
+.notification-dot {
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #c7d5e4;
+}
+
+.notification-item.unread .notification-dot {
+  background: #4c8dff;
+  box-shadow: 0 0 0 4px rgba(76, 141, 255, .12);
+}
+
+.notification-item > span:last-child {
+  min-width: 0;
+}
+
+.notification-item strong,
+.notification-item small,
+.notification-item em {
+  display: block;
+}
+
+.notification-item strong {
+  color: #29415e;
+  font-size: 11px;
+}
+
+.notification-item small {
+  margin-top: 4px;
+  color: #667c94;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.notification-item em {
+  margin-top: 5px;
+  color: #9aabbd;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.notification-footer {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  color: #397bdc;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 12px 16px 14px;
+  text-align: left;
+}
+
+.profile-popover-head {
+  align-items: center;
+  padding: 0 0 14px;
+}
+
+.profile-details {
+  display: grid;
+  gap: 9px;
+  padding: 14px 0;
+  border-bottom: 1px solid #e5edf5;
+}
+
+.profile-details span {
+  display: block;
+  color: #8193a8;
+  font-size: 10px;
+}
+
+.profile-details strong {
+  display: block;
+  margin-top: 3px;
+  color: #304863;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.profile-menu-actions {
+  display: grid;
+  gap: 3px;
+  padding-top: 9px;
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #4e6680;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+}
+
+.profile-menu-item:hover {
+  background: #edf4ff;
+  color: #2d64a9;
+}
+
+.profile-menu-item span {
+  width: 18px;
+  color: #5488d2;
+  text-align: center;
+}
+
+.profile-menu-item b {
+  margin-left: auto;
+  color: #8ca3bd;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+@media (max-width: 740px) {
+  .notification-popover {
+    right: -44px;
+  }
+
+  .profile-popover {
+    left: 44px;
+    bottom: -8px;
+  }
+}
