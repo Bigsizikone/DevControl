@@ -124,3 +124,7 @@ docker compose -f docker-compose.deploy.yml --profile olap up -d clickhouse
 ```
 
 Подробная схема, владельцы данных, события, OLAP, миграция и риски описаны в [docs/architecture/microservices.md](docs/architecture/microservices.md). Контракты находятся в `packages/contracts`.
+
+## Приемная документация
+
+Комплект ЧТЗ, ПМИ, ПСИ и целевого описания бизнес-процессов находится в каталоге [docs/acceptance](docs/acceptance/00_Комплект_приемной_документации.md).
