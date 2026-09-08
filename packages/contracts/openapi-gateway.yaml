@@ -27,3 +27,15 @@ paths:
     get: { summary: Состояние OLAP-куба, responses: { '200': { description: OK } } }
   /api/v1/analytics/cube/rebuild:
     post: { summary: Полная пересборка куба (только администратор), responses: { '202': { description: Accepted }, '403': { description: Forbidden } } }
+  /api/assets/api-description:
+    get:
+      summary: Каноническое описание API Service Desk
+      description: Возвращает атрибуты, ограничения и примеры сообщений для интеграций. Доступно только администратору.
+      parameters:
+        - name: x-role
+          in: header
+          required: true
+          schema: { type: string, enum: [admin] }
+      responses:
+        '200': { description: Описание API с объектами и методами }
+        '403': { description: Раздел доступен только администратору }

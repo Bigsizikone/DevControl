@@ -161,7 +161,7 @@ function App() {
     { id: 'reports' as Tab, icon: '▤', label: 'Отчёты' },
     { id: 'equipment' as Tab, icon: '▣', label: 'Оборудование' },
     { id: 'inventory' as Tab, icon: '▥', label: 'Склад и ТМЦ' },
-    { id: 'integrations' as Tab, icon: '⇄', label: 'Обмены с ИС' },
+    ...(CURRENT_ROLE === 'admin' ? [{ id: 'integrations' as Tab, icon: '⇄', label: 'Интеграции' }] : []),
     ...(['operator', 'senior_operator', 'admin'].includes(CURRENT_ROLE) ? [{ id: 'cameras' as Tab, icon: '◉', label: 'Видеокамеры' }] : []),
     ...(CURRENT_ROLE === 'admin' ? [{ id: 'admin' as Tab, icon: '▦', label: 'НСИ' }] : []),
     ...(CURRENT_ROLE === 'admin' ? [{ id: 'security' as Tab, icon: '⚿', label: 'Информационная безопасность' }] : []),
