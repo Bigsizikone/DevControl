@@ -68,13 +68,13 @@ export class AssetsService {
     return {
       title: 'DevControl Service Desk API',
       version: '1.0.0',
-      base_url: '/api',
+      base_url: 'http://KPDGS-help.ru/api',
       format: 'JSON UTF-8',
       authentication: 'Authorization: Bearer <api-key>',
       headers: ['Authorization: Bearer <api-key>', 'Content-Type: application/json', 'X-Correlation-ID: <uuid>'],
       address_generation: [
         'Адрес формируется как <адрес Gateway или сервиса> + base_url + путь метода.',
-        'Для локального контура: http://localhost:3000/api.',
+        'Для локального контура: http://KPDGS-help.ru/api.',
         'Для промышленного контура используйте DNS-имя API Gateway и HTTPS; внутренние адреса сервисов наружу не публикуются.',
       ],
       key_generation: [

@@ -816,6 +816,17 @@ textarea:focus-visible {
   line-height: 1.55;
 }
 
+.api-service-address {
+  margin-top: 10px;
+  color: #60758d;
+  font-size: 11px;
+}
+
+.api-service-address code {
+  color: #2c6db4;
+  font-weight: 600;
+}
+
 .api-version {
   display: grid;
   min-width: 112px;
