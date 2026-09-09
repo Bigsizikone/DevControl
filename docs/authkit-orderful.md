@@ -32,8 +32,10 @@ Save a dated backup of Caddyfile and validate the new file before reloading. HTT
 
 ## Validation and boundaries
 
-Both builds and 17 tests pass. Browser checks cover invalid and valid login, admin identity, database health, eight workspace sections, mobile menu, no page overflow, logout, revoked cookies, forged administrator headers and cross-origin rejection. Screenshots were checked at 1536×1024 and 390×844. The in-app browser initially rendered the page, then failed with a lost-tab error; the repeatable verification used bundled Playwright with installed Edge.
+Both builds and 18 tests pass. Browser checks cover invalid and valid login, admin identity, database health, eight workspace sections, mobile menu, no page overflow, logout, revoked cookies, forged administrator headers and cross-origin rejection. Screenshots were checked at 1536×1024 and 390×844. The in-app browser initially rendered the page, then failed with a lost-tab error; the repeatable verification used bundled Playwright with installed Edge.
 
 Visual comparison covered layout, copy, palette, typography, icons, radii and responsive behavior. Deliberate differences from the generated concepts follow the supplied text references: restrained glass lighting, pill-shaped auth CTA, monochrome status badges, available sans-serif fonts and actual database values. Sidebar wrapping and a stale NSI default query were fixed. The overview chart uses actual creation dates. Legacy reports remain demonstration forms and are explicitly labeled as such.
 
 Strix scan was not run: no model provider was configured and the local Docker daemon was unavailable. Application tests and browser/API checks are not a substitute for a full penetration test.
+
+The `/assets` business API prefix is authenticated; only Vite static bundle filenames are public. A regression test covers the route collision, trusted role propagation and anonymous API rejection.

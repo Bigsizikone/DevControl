@@ -40,7 +40,9 @@ export async function installAuthentication(server: any, database: DatabaseServi
     delete req.headers['x-role'];
     delete req.headers['x-user-id'];
     const path = req.path;
-    if (['GET', 'HEAD'].includes(req.method) && (path === '/' || path === '/index.html' || path.startsWith('/assets/') || path === '/favicon.svg' || path === '/health/live')) return next();
+    // /assets is also a business API prefix: only Vite's static file names are public.
+    const staticAsset = /^\/assets\/[a-zA-Z0-9_-]+\.(?:js|css|woff2?)$/.test(path);
+    if (['GET', 'HEAD'].includes(req.method) && (path === '/' || path === '/index.html' || staticAsset || path === '/favicon.svg' || path === '/health/live')) return next();
     res.setHeader('Cache-Control', 'no-store');
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.headers.origin !== origin) {
       return res.status(403).json({ message: 'Недопустимый источник запроса' });
