@@ -1,0 +1,12 @@
+FROM node:24-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json ./
+RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
+COPY dist ./dist
+COPY frontend/dist ./frontend/dist
+COPY scripts/create-admin.cjs ./scripts/create-admin.cjs
+RUN mkdir -p /app/storage && chown node:node /app/storage
+USER node
+EXPOSE 3000
+CMD ["node", "dist/main.js"]

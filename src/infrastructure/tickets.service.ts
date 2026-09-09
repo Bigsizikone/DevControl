@@ -57,7 +57,7 @@ export class TicketsService {
   async listDocuments(options: { developmentOnly?: boolean; boardId?: string } = {}) {
     if (options.developmentOnly) return this.listDevelopmentTasks({ boardId: options.boardId });
     const result = await this.database.query(`
-      SELECT t.id, t.number, t.subject, t.description, t.status, t.created_at, t.visit_required, t.visit_scheduled_at,
+      SELECT t.id, t.number, t.subject, t.description, t.status, t.priority, t.created_at, t.visit_required, t.visit_scheduled_at,
              t.purchase_required, t.erp_request_numbers, t.repair_required, t.equipment_id, t.development_required,
              ds.name AS development_status, dc.status AS development_status_code, t.development_board_id,
              dc.id AS development_card_id, dc.number AS development_card_number, dc.code AS development_card_code,

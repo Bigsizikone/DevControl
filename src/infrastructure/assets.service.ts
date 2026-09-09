@@ -68,20 +68,20 @@ export class AssetsService {
     return {
       title: 'DevControl Service Desk API',
       version: '1.0.0',
-      base_url: 'http://KPDGS-help.ru/api',
+      base_url: 'https://devcontrol.tech/ServiceDesk/api',
       format: 'JSON UTF-8',
-      authentication: 'Authorization: Bearer <api-key>',
-      headers: ['Authorization: Bearer <api-key>', 'Content-Type: application/json', 'X-Correlation-ID: <uuid>'],
+      authentication: 'Защищённая сессия sd_session (HttpOnly cookie)',
+      headers: ['Content-Type: application/json', 'Origin: https://devcontrol.tech'],
       address_generation: [
-        'Адрес формируется как <адрес Gateway или сервиса> + base_url + путь метода.',
-        'Для локального контура: http://KPDGS-help.ru/api.',
-        'Для промышленного контура используйте DNS-имя API Gateway и HTTPS; внутренние адреса сервисов наружу не публикуются.',
+        'Адрес метода: https://devcontrol.tech/ServiceDesk/api + путь метода.',
+        'Для локального контура: http://localhost:3000/ServiceDesk/api.',
+        'Рабочие запросы выполняются по HTTPS после входа в Service Desk.',
       ],
       key_generation: [
-        'Администратор создает запись подключения в разделе «Интеграции».',
-        'Секретный API-ключ генерируется только на сервере, показывается один раз и хранится во внешнем хранилище секретов в виде хэша.',
-        'Ключ передается только в заголовке Authorization и не включается в URL, тело запроса, логи или описание API.',
-        'При утечке ключ отзывается и выпускается новый; срок действия и область доступа задаются политикой интеграции.',
+        'POST /auth/login принимает login и password и создаёт защищённую сессию на 8 часов.',
+        'Браузер отправляет HttpOnly cookie автоматически. Роль и пользователь определяются сервером.',
+        'POST /auth/logout отзывает сессию; смена пароля отзывает все сессии пользователя.',
+        'Выпуск API-ключей для внешних интеграций в этой версии не реализован.',
       ],
       objects: [
         {

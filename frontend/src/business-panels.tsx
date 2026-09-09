@@ -1,3 +1,4 @@
+import { apiUrl } from './session';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
 type UserOption = { id: string; display_name: string };
@@ -18,8 +19,8 @@ type ApiObject = { object: string; endpoint: string; identifier: string; attribu
 type ApiDescription = { title: string; version: string; base_url: string; format: string; authentication: string; headers: string[]; address_generation: string[]; key_generation: string[]; objects: ApiObject[]; errors: Array<{ status: number; description: string }> };
 
 const assetRequest = async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
-  const response = await fetch(`/api${path}`, { ...init, headers: { 'Content-Type': 'application/json', 'x-role': 'admin', ...(init.headers ?? {}) } });
-  if (!response.ok) throw new Error(`API ${response.status}`);
+  const response = await fetch(apiUrl(`${path}`), { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) } });
+  if (response.status === 401) window.dispatchEvent(new Event('session-expired')); if (!response.ok) throw new Error(`API ${response.status}`);
   return response.json() as Promise<T>;
 };
 

@@ -69,7 +69,7 @@ export class TicketsController {
   update(@Param('id') id: string, @Body() body: { visitRequired?: boolean; visitScheduledAt?: string | null; purchaseRequired?: boolean; erpRequestNumbers?: string[]; repairRequired?: boolean }) { return this.tickets.updateDocument(id, body); }
 
   @Post(':id/comments')
-  comment(@Param('id') id: string, @Body() body: { body?: string; authorId?: string }) { return this.tickets.addComment(id, body); }
+  comment(@Param('id') id: string, @Body() body: { body?: string }, @Headers('x-user-id') authorId: string) { return this.tickets.addComment(id, { body: body.body, authorId }); }
 
   @Post()
   create(@Body() body: { userId?: string; subject?: string; description?: string; ticketTypeId?: string; ticketKindId?: string; equipmentId?: string; developmentRequired?: boolean; developmentBoardId?: string }) { return this.tickets.createDocument(body); }

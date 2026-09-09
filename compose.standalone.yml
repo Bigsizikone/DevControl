@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: service_desk
+      POSTGRES_USER: service_desk
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U service_desk -d service_desk"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://service_desk:${DB_PASSWORD}@db:5432/service_desk
+      APP_BASE_PATH: /ServiceDesk
+      PUBLIC_ORIGIN: https://devcontrol.tech
+      MAX_VIOLATION_FILE_SIZE_MB: 200
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      default:
+      edge:
+        aliases: [servicedesk-app]
+    volumes:
+      - files:/app/storage
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+networks:
+  edge:
+    external: true
+    name: one-c-news_one-c-news
+volumes:
+  database:
+  files:
