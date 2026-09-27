@@ -1,5 +1,7 @@
 # Authkit / Orderful release
 
+This document describes the authentication/UI release before the service split. For the current runtime, databases and deployment procedure, see [Connected services](architecture/connected-services.md).
+
 The existing React/NestJS application now uses an Authkit-inspired sign-in screen and an Orderful-inspired light workspace. These are visual references; the application does not depend on the WorkOS/AuthKit hosted service.
 
 ## Authentication

@@ -1,3 +1,4 @@
+import { isServiceId, SERVICE_DEFINITIONS, tableOwner } from '../plugins/contracts';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import type { QueryResultRow } from 'pg';
@@ -13,6 +14,8 @@ const ADMIN_TABLES = [
   'camera_work_shifts', 'camera_schedule_templates', 'camera_violations', 'camera_violation_attachments', 'camera_schedule_recommendations',
   'development_statuses', 'development_cards', 'development_task_watchers', 'development_task_comments',
 ] as const;
+const runtime = process.env.SERVICE_ID || 'core';
+const allowedTables: readonly string[] = isServiceId(runtime) ? SERVICE_DEFINITIONS[runtime].tables.filter(t => t !== 'equipment_repairs' && t !== 'camera_tickets') : ADMIN_TABLES.filter(table => !tableOwner(table));
 
 type Column = {
   name: string;
@@ -40,7 +43,7 @@ export class AdminService {
        FROM information_schema.tables
        WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name = ANY($1::text[])
        ORDER BY table_name`,
-      [ADMIN_TABLES],
+      [allowedTables],
     );
     const tables = await Promise.all(result.rows.map(async ({ table_name }) => {
       const count = await this.database.query<{ count: string }>(`SELECT count(*)::text AS count FROM ${this.identifier(table_name)}`);
@@ -147,7 +150,7 @@ export class AdminService {
   }
 
   private assertTable(table: string): asserts table is typeof ADMIN_TABLES[number] {
-    if (!ADMIN_TABLES.includes(table as typeof ADMIN_TABLES[number])) throw new BadRequestException('Таблица недоступна для администрирования');
+    if (!allowedTables.includes(table)) throw new BadRequestException('Таблица недоступна для администрирования');
   }
 
   private identifier(value: string) {

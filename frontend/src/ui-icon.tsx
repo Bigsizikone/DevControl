@@ -1,4 +1,5 @@
 const paths: Record<string, string> = {
+  settings: 'M4 7h16M4 17h16M9 4v6M15 14v6',
   overview: 'M3 10 12 3l9 7M5 9v12h5v-7h4v7h5V9',
   tickets: 'M6 3h8l4 4v14H6ZM14 3v5h4M9 12h6M9 16h6',
   development: 'M3 4h18v16H3ZM10 4v16M6 8h1M14 8h4M14 12h4',

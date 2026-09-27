@@ -20,6 +20,13 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://service_desk:${DB_PASSWORD}@db:5432/service_desk
+      SERVICE_ID: core
+      EQUIPMENT_URL: http://equipment:3000
+      EQUIPMENT_SECRET: ${EQUIPMENT_SECRET:?Set EQUIPMENT_SECRET}
+      SURVEILLANCE_URL: http://surveillance:3000
+      SURVEILLANCE_SECRET: ${SURVEILLANCE_SECRET:?Set SURVEILLANCE_SECRET}
+      SECURITY_URL: http://security:3000
+      SECURITY_SECRET: ${SECURITY_SECRET:?Set SECURITY_SECRET}
       APP_BASE_PATH: /ServiceDesk
       PUBLIC_ORIGIN: https://devcontrol.tech
       MAX_VIOLATION_FILE_SIZE_MB: 200
@@ -30,13 +37,140 @@ services:
       default:
       edge:
         aliases: [servicedesk-app]
-    volumes:
-      - files:/app/storage
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 20s
       timeout: 5s
       retries: 3
+  equipment-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: equipment
+      POSTGRES_USER: equipment
+      POSTGRES_PASSWORD: ${EQUIPMENT_DB_PASSWORD:?Set EQUIPMENT_DB_PASSWORD}
+    volumes:
+      - equipment-database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U equipment -d equipment"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  equipment:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    restart: unless-stopped
+    command: [node, dist/plugins/equipment.main.js]
+    environment:
+      SERVICE_ID: equipment
+      DATABASE_URL: postgresql://equipment:${EQUIPMENT_DB_PASSWORD}@equipment-db:5432/equipment
+      EQUIPMENT_SECRET: ${EQUIPMENT_SECRET:?Set EQUIPMENT_SECRET}
+      CORE_URL: http://app:3000
+      MAX_VIOLATION_FILE_SIZE_MB: 200
+    depends_on:
+      equipment-db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+  surveillance-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: surveillance
+      POSTGRES_USER: surveillance
+      POSTGRES_PASSWORD: ${SURVEILLANCE_DB_PASSWORD:?Set SURVEILLANCE_DB_PASSWORD}
+    volumes:
+      - surveillance-database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U surveillance -d surveillance"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  surveillance:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    restart: unless-stopped
+    command: [node, dist/plugins/surveillance.main.js]
+    environment:
+      SERVICE_ID: surveillance
+      DATABASE_URL: postgresql://surveillance:${SURVEILLANCE_DB_PASSWORD}@surveillance-db:5432/surveillance
+      SURVEILLANCE_SECRET: ${SURVEILLANCE_SECRET:?Set SURVEILLANCE_SECRET}
+      CORE_URL: http://app:3000
+      MAX_VIOLATION_FILE_SIZE_MB: 200
+    depends_on:
+      surveillance-db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - surveillance-files:/app/storage
+  security-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: security
+      POSTGRES_USER: security
+      POSTGRES_PASSWORD: ${SECURITY_DB_PASSWORD:?Set SECURITY_DB_PASSWORD}
+    volumes:
+      - security-database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U security -d security"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  security:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    restart: unless-stopped
+    command: [node, dist/plugins/security.main.js]
+    environment:
+      SERVICE_ID: security
+      DATABASE_URL: postgresql://security:${SECURITY_DB_PASSWORD}@security-db:5432/security
+      SECURITY_SECRET: ${SECURITY_SECRET:?Set SECURITY_SECRET}
+      CORE_URL: http://app:3000
+      MAX_VIOLATION_FILE_SIZE_MB: 200
+    depends_on:
+      security-db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - security-files:/app/storage
+  migrate-services:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    profiles: [maintenance]
+    command: [node, scripts/migrate-connected-services.cjs, --maintenance]
+    environment: &migration-environment
+      DATABASE_URL: postgresql://service_desk:${DB_PASSWORD}@db:5432/service_desk
+      EQUIPMENT_DATABASE_URL: postgresql://equipment:${EQUIPMENT_DB_PASSWORD}@equipment-db:5432/equipment
+      SURVEILLANCE_DATABASE_URL: postgresql://surveillance:${SURVEILLANCE_DB_PASSWORD}@surveillance-db:5432/surveillance
+      SECURITY_DATABASE_URL: postgresql://security:${SECURITY_DB_PASSWORD}@security-db:5432/security
+  migrate-files:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    profiles: [maintenance]
+    user: root
+    command: [node, scripts/migrate-service-files.cjs]
+    environment: *migration-environment
+    volumes:
+      - files:/legacy-files:ro
+      - surveillance-files:/camera-files
+      - security-files:/security-files
 networks:
   edge:
     external: true
@@ -44,3 +178,8 @@ networks:
 volumes:
   database:
   files:
+  equipment-database:
+  surveillance-database:
+  security-database:
+  surveillance-files:
+  security-files:

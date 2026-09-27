@@ -1,3 +1,6 @@
+import { installReferenceEndpoint, installServiceGateway } from './plugins/gateway';
+import { ModulesService } from './plugins/modules.service';
+import { AdminService } from './infrastructure/admin.service';
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -28,7 +31,9 @@ async function bootstrap() {
     else if (request.url.startsWith('/api/')) request.url = request.url.slice(4);
     next();
   });
+  installReferenceEndpoint(httpServer, app.get(DatabaseService));
   await installAuthentication(httpServer, app.get(DatabaseService));
+  installServiceGateway(httpServer, app.get(ModulesService), app.get(AdminService));
   app.useStaticAssets(frontendDist);
   httpServer.use((request: { method: string; headers: Record<string, string | undefined> }, response: { sendFile: (path: string) => void }, next: () => void) => {
     const acceptsHtml = request.headers.accept?.includes('text/html');

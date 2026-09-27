@@ -5,7 +5,8 @@ COPY package.json ./
 RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
 COPY dist ./dist
 COPY frontend/dist ./frontend/dist
-COPY scripts/create-admin.cjs ./scripts/create-admin.cjs
+COPY scripts/create-admin.cjs scripts/migrate-connected-services.cjs scripts/migrate-service-files.cjs ./scripts/
+COPY database ./database
 RUN mkdir -p /app/storage && chown node:node /app/storage
 USER node
 EXPOSE 3000

@@ -1,3 +1,4 @@
+import { ModulesService } from '../plugins/modules.service';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 import { parseNonNegativeHours, validateDevelopmentDates } from './development.rules';
@@ -17,7 +18,7 @@ export type DevelopmentFilters = {
 @Injectable()
 export class TicketsService {
   private readonly systemAuthorId = '00000000-0000-0000-0000-000000000001';
-  constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly database: DatabaseService, private readonly modules: ModulesService) {}
 
   async listUsers() {
     const result = await this.database.query<{ id: string; display_name: string; email: string }>('SELECT id, display_name, email FROM users WHERE is_active = true ORDER BY display_name');
@@ -28,11 +29,11 @@ export class TicketsService {
     const [types, kinds, equipment, developmentBoards] = await Promise.all([
       this.database.query<{ id: string; code: string; name: string; is_default: boolean }>('SELECT id, code, name, is_default FROM ticket_types WHERE is_active = true ORDER BY is_default DESC, name'),
       this.database.query('SELECT id, ticket_type_id, system_id, code, name FROM ticket_kinds WHERE is_active = true ORDER BY name'),
-      this.database.query("SELECT id, inventory_number, name, status FROM equipment_items WHERE is_active = true AND status <> 'written_off' ORDER BY inventory_number"),
+      this.modules.equipmentCatalog(),
       this.listDevelopmentBoards(),
     ]);
     const defaultType = types.rows.find((item: { id: string; is_default?: boolean; name: string }) => item.is_default && item.name === 'Запрос на обслуживание') ?? types.rows.find((item: { id: string; is_default?: boolean }) => item.is_default);
-    return { types: types.rows, kinds: kinds.rows, equipment: equipment.rows, developmentBoards, defaultTypeId: defaultType?.id ?? null };
+    return { types: types.rows, kinds: kinds.rows.filter(k => k.code !== 'repair' || equipment.available), equipmentAvailable: equipment.available, equipment: equipment.rows, developmentBoards, defaultTypeId: defaultType?.id ?? null };
   }
 
   async listDevelopmentBoards() {
@@ -63,12 +64,12 @@ export class TicketsService {
              dc.id AS development_card_id, dc.number AS development_card_number, dc.code AS development_card_code,
              dc.title AS development_card_title, dc.description AS development_card_description,
              db.name AS development_board_name, db.system_id AS development_system_id, systems.name AS development_system_name,
-             tt.name AS ticket_type_name, tk.name AS ticket_kind_name, equipment.inventory_number AS equipment_inventory_number,
-             equipment.name AS equipment_name, u.display_name AS requester_name, u.email AS requester_email, assignee.display_name AS assignee_name
+             tt.name AS ticket_type_name, tk.name AS ticket_kind_name, t.equipment_inventory_number,
+             t.equipment_name, u.display_name AS requester_name, u.email AS requester_email, assignee.display_name AS assignee_name
       FROM tickets t JOIN users u ON u.id = t.created_by LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id
       LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id LEFT JOIN development_boards db ON db.id = t.development_board_id
       LEFT JOIN systems ON systems.id = db.system_id LEFT JOIN development_cards dc ON dc.ticket_id = t.id AND dc.parent_task_id IS NULL
-      LEFT JOIN development_statuses ds ON ds.code = dc.status LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
+      LEFT JOIN development_statuses ds ON ds.code = dc.status
       LEFT JOIN users assignee ON assignee.id = t.assignee_id ORDER BY t.created_at DESC LIMIT 100`);
     return { tickets: result.rows };
   }
@@ -83,12 +84,12 @@ export class TicketsService {
              dc.id AS development_card_id, dc.number AS development_card_number, dc.code AS development_card_code,
              dc.title AS development_card_title, dc.description AS development_card_description, db.name AS development_board_name,
              db.system_id AS development_system_id, systems.name AS development_system_name, tt.name AS ticket_type_name,
-             tk.name AS ticket_kind_name, equipment.inventory_number AS equipment_inventory_number, equipment.name AS equipment_name,
+             tk.name AS ticket_kind_name, t.equipment_inventory_number, t.equipment_name,
              u.display_name AS requester_name, u.email AS requester_email, assignee.display_name AS assignee_name
       FROM tickets t JOIN users u ON u.id = t.created_by LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id
       LEFT JOIN ticket_kinds tk ON tk.id = t.ticket_kind_id LEFT JOIN development_boards db ON db.id = t.development_board_id
       LEFT JOIN systems ON systems.id = db.system_id LEFT JOIN development_cards dc ON dc.ticket_id = t.id AND dc.parent_task_id IS NULL
-      LEFT JOIN development_statuses ds ON ds.code = dc.status LEFT JOIN equipment_items equipment ON equipment.id::text = t.equipment_id
+      LEFT JOIN development_statuses ds ON ds.code = dc.status
       LEFT JOIN users assignee ON assignee.id = t.assignee_id WHERE t.id = $1`, [id]);
     if (!ticket.rows[0]) throw new NotFoundException('Обращение не найдено');
     const comments = await this.database.query(`SELECT c.id, c.body, c.created_at, u.display_name AS author_name FROM ticket_comments c JOIN users u ON u.id = c.author_id WHERE c.ticket_id = $1 ORDER BY c.created_at ASC`, [id]);
@@ -102,8 +103,9 @@ export class TicketsService {
     const erpRequestNumbers = [...new Set((input.erpRequestNumbers ?? []).map((value) => String(value).trim()).filter(Boolean))];
     if (erpRequestNumbers.some((value) => value.length > 20)) throw new BadRequestException('Номер заявки ERP не должен превышать 20 символов');
     if (purchaseRequired && erpRequestNumbers.length === 0) throw new BadRequestException('Укажите хотя бы один номер заявки ERP');
-    const current = await this.database.query<{ id: string; erp_request_numbers: string[] | null }>('SELECT id, erp_request_numbers FROM tickets WHERE id = $1', [id]);
+    const current = await this.database.query<{ id: string; erp_request_numbers: string[] | null; repair_required: boolean }>('SELECT id, erp_request_numbers, repair_required FROM tickets WHERE id = $1', [id]);
     if (!current.rows[0]) throw new NotFoundException('Обращение не найдено');
+    if (repairRequired !== current.rows[0].repair_required) await this.modules.requireEnabled('equipment');
     const previousNumbers = current.rows[0].erp_request_numbers ?? []; const addedNumbers = purchaseRequired ? erpRequestNumbers.filter((number) => !previousNumbers.includes(number)) : [];
     const result = await this.database.query(`UPDATE tickets SET visit_required = $2, visit_scheduled_at = $3, purchase_required = $4, erp_request_numbers = $5, repair_required = $6, status = CASE WHEN $6 THEN 'repair' ELSE status END, updated_at = now() WHERE id = $1 RETURNING id, visit_required, visit_scheduled_at, purchase_required, erp_request_numbers, repair_required, status`, [id, required, required ? scheduledAt : null, purchaseRequired, erpRequestNumbers, repairRequired]);
     for (const number of addedNumbers) await this.database.query(`INSERT INTO ticket_comments (ticket_id, author_id, body) VALUES ($1, $2, $3)`, [id, this.systemAuthorId, `Создана заявка на приобретение №${number}`]);
@@ -123,14 +125,19 @@ export class TicketsService {
     const user = await this.database.query<{ id: string; display_name: string; email: string }>('SELECT id, display_name, email FROM users WHERE id = $1 AND is_active = true', [userId]); if (!user.rows[0]) throw new NotFoundException('Пользователь не найден');
     const typeId = String(input.ticketTypeId ?? '').trim(); const kindId = String(input.ticketKindId ?? '').trim(); const equipmentId = String(input.equipmentId ?? '').trim(); const developmentRequired = Boolean(input.developmentRequired); const developmentBoardId = String(input.developmentBoardId ?? '').trim();
     const kind = kindId ? await this.database.query<{ code: string; name: string; system_id: string | null }>('SELECT tk.code, tk.name, tk.system_id FROM ticket_kinds tk WHERE tk.id = $1 AND tk.ticket_type_id = $2 AND tk.is_active = true', [kindId, typeId]) : { rows: [] };
-    const type = typeId ? await this.database.query<{ name: string }>('SELECT name FROM ticket_types WHERE id = $1 AND is_active = true', [typeId]) : { rows: [] }; const equipmentRequired = kind.rows[0]?.code === 'repair' || type.rows[0]?.name === 'Запрос на обслуживание';
+    const type = typeId ? await this.database.query<{ name: string }>('SELECT name FROM ticket_types WHERE id = $1 AND is_active = true', [typeId]) : { rows: [] }; const equipmentRequired = kind.rows[0]?.code === 'repair';
     if (equipmentRequired && !equipmentId) throw new BadRequestException('Для запроса на обслуживание выберите оборудование');
-    if (equipmentId && !(await this.database.query('SELECT id FROM equipment_items WHERE id = $1 AND is_active = true', [equipmentId])).rows[0]) throw new NotFoundException('Оборудование не найдено');
+    let selectedEquipment: { name: string; inventory_number: string } | undefined;
+    if (equipmentRequired || equipmentId) {
+      await this.modules.requireEnabled('equipment');
+      selectedEquipment = (await this.modules.equipmentCatalog()).rows.find(e => e.id === equipmentId);
+      if (!selectedEquipment) throw new BadRequestException('Оборудование недоступно. Проверьте подключение сервиса');
+    }
     if (developmentRequired) {
       if (!kind.rows[0]?.system_id) throw new BadRequestException('Для обращения на разработку укажите вид заявки с системой');
       const board = await this.database.query<{ id: string }>("SELECT db.id FROM development_boards db WHERE db.id = $1 AND db.is_active = true AND db.status = 'Ведется разработка функционала' AND db.system_id = $2 AND EXISTS (SELECT 1 FROM systems s WHERE s.id = db.system_id AND s.is_active = true)", [developmentBoardId, kind.rows[0].system_id]); if (!board.rows[0]) throw new BadRequestException('Выберите доску разработки со статусом «Ведется разработка функционала»');
     }
-    const ticket = await this.database.query(`INSERT INTO tickets (created_by, subject, description, ticket_type_id, ticket_kind_id, equipment_id, development_required, development_board_id, status) VALUES ($1, $2, NULLIF($3, ''), NULLIF($4, '')::uuid, NULLIF($5, '')::uuid, NULLIF($6, ''), $7, NULLIF($8, '')::uuid, 'new') RETURNING id, number, subject, description, status, created_at`, [userId, subject, description, typeId, kindId, equipmentId, developmentRequired, developmentRequired ? developmentBoardId : '']);
+    const ticket = await this.database.query(`INSERT INTO tickets (created_by, subject, description, ticket_type_id, ticket_kind_id, equipment_id, development_required, development_board_id, equipment_name, equipment_inventory_number, status) VALUES ($1, $2, NULLIF($3, ''), NULLIF($4, '')::uuid, NULLIF($5, '')::uuid, NULLIF($6, ''), $7, NULLIF($8, '')::uuid, $9, $10, 'new') RETURNING id, number, subject, description, status, created_at`, [userId, subject, description, typeId, kindId, equipmentId, developmentRequired, developmentRequired ? developmentBoardId : '', selectedEquipment?.name ?? null, selectedEquipment?.inventory_number ?? null]);
     if (developmentRequired && ticket.rows[0] && kind.rows[0]?.system_id) { const card = await this.database.query<{ id: string }>(`INSERT INTO development_cards (ticket_id, board_id, system_id, title, description, created_by) VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6) RETURNING id`, [ticket.rows[0].id, developmentBoardId, kind.rows[0].system_id, subject, description, this.systemAuthorId]); await this.database.query(`UPDATE development_cards SET root_task_id = id WHERE id = $1`, [card.rows[0].id]); await this.writeAudit(this.systemAuthorId, 'create', card.rows[0].id, null, { status: 'backlog', title: subject }, 'Создание карточки разработки из обращения'); }
     return { ticket: { ...ticket.rows[0], requester_name: user.rows[0].display_name, requester_email: user.rows[0].email } };
   }

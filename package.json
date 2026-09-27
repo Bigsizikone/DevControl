@@ -11,7 +11,10 @@
     "start:dev": "nest start --watch",
     "test": "jest --runInBand",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:architecture": "tsc -p tsconfig.architecture.json --noEmit"
+    "typecheck:architecture": "tsc -p tsconfig.architecture.json --noEmit",
+    "start:equipment": "node dist/plugins/equipment.main.js",
+    "start:surveillance": "node dist/plugins/surveillance.main.js",
+    "start:security": "node dist/plugins/security.main.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",
