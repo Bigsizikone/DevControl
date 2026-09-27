@@ -146,3 +146,7 @@ docker compose -f docker-compose.deploy.yml --profile olap up -d clickhouse
 ## Приемная документация
 
 Комплект ЧТЗ, ПМИ, ПСИ и целевого описания бизнес-процессов находится в каталоге [docs/acceptance](docs/acceptance/00_Комплект_приемной_документации.md).
+
+## Поддержать развитие DevControl Service Desk
+
+[Поддержать проект](https://www.tbank-online.com/rm/r_oqpiLMwzYV.kqpqQfQFVH/8koey17033)
